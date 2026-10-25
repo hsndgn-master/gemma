@@ -1,24 +1,104 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gemma</title>
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #111;
-      color: white;
-      font-family: sans-serif;
-      font-size: 48px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gemma</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-system,sans-serif;overflow:hidden}
+#feed{position:fixed;top:0;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch}
+.card{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#16161d;overflow:hidden}
+.card iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;pointer-events:none}
+.info{position:absolute;left:14px;bottom:76px;pointer-events:none;text-shadow:0 1px 4px #000;font-size:15px;line-height:1.5}
+.info span{opacity:.8;font-size:13px}
+.like{position:absolute;right:12px;bottom:140px;z-index:3;background:rgba(0,0,0,.45);color:#fff;border:0;border-radius:30px;width:56px;height:70px;font-size:26px}
+.like small{font-size:13px}
+.like.on{color:#ff3b5c}
+.play{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:3;background:#fff;color:#000;border:0;border-radius:30px;padding:14px 34px;font-size:17px;font-weight:700}
+.panel{position:fixed;top:0;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));display:none;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:20px;background:#0d0d12}
+#nav{position:fixed;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#000;border-top:1px solid #2a2a33;display:flex;align-items:center;justify-content:space-around;z-index:10}
+#nav button{background:none;border:0;color:#888;font-size:28px;width:70px;height:56px}
+#nav button.on{color:#fff}
+#nav button.plus{background:#fff;color:#000;border-radius:14px;width:56px;height:40px;font-size:26px;font-weight:700}
+</style>
 </head>
 <body>
-  Gemma
+<div id="feed"></div>
+<div class="panel" id="create">Oyun oluşturma ekranı<br>yakında burada olacak</div>
+<div class="panel" id="profile">Profil ekranı<br>yakında burada olacak</div>
+<div id="nav">
+<button class="on" data-view="feed">⌂</button>
+<button class="plus" data-view="create">+</button>
+<button data-view="profile">☺</button>
+</div>
+<script>
+var games=[
+{title:"Balon Patlat",creator:"gemma",tags:"#refleks #kolay",
+css:`body{background:#1e3a8a}#s{position:absolute;top:70px;left:50%;transform:translateX(-50%);font-size:52px;z-index:5}.b{position:absolute;bottom:-70px;width:64px;height:64px;border-radius:50%;animation:up 3.5s linear forwards}@keyframes up{to{bottom:105%}}`,
+body:`<div id="s">0</div>`,
+js:`var s=0,sc=document.getElementById("s");
+function spawn(){var b=document.createElement("div");b.className="b";b.style.left=(Math.random()*80+5)+"%";b.style.background="hsl("+Math.random()*360+",80%,60%)";b.onclick=function(){s++;sc.textContent=s;b.remove();};document.body.appendChild(b);setTimeout(function(){b.remove();},3500);}
+setInterval(spawn,700);`},
+{title:"Refleks Testi",creator:"gemma",tags:"#refleks #hız",
+css:`body{display:flex;align-items:center;justify-content:center;background:#1e3a8a;text-align:center;font-size:30px;padding:20px}`,
+body:`<div id="t">Başlamak için dokun</div>`,
+js:`var t=document.getElementById("t"),state=0,start=0,timer;
+document.body.onclick=function(){
+if(state==0){state=1;t.textContent="Bekle...";document.body.style.background="#7f1d1d";timer=setTimeout(function(){state=2;start=Date.now();document.body.style.background="#15803d";t.textContent="ŞİMDİ DOKUN!";},1000+Math.random()*3000);}
+else if(state==1){clearTimeout(timer);state=0;document.body.style.background="#1e3a8a";t.textContent="Çok erken! Tekrar dokun";}
+else{state=0;document.body.style.background="#1e3a8a";t.textContent=(Date.now()-start)+" ms. Tekrar dokun";}
+};`},
+{title:"10 Saniye Dokunma",creator:"gemma",tags:"#hız #rekor",
+css:`body{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#4c1d95;text-align:center;padding:20px}#c{font-size:90px}#m{font-size:22px}`,
+body:`<div id="c">0</div><div id="m">Başlamak için dokun</div>`,
+js:`var n=0,on=false,done=false,c=document.getElementById("c"),m=document.getElementById("m");
+document.body.onclick=function(){
+if(done){n=0;done=false;c.textContent=0;m.textContent="Başlamak için dokun";return;}
+if(!on){on=true;m.textContent="10 saniyen var!";setTimeout(function(){on=false;done=true;m.textContent="Süre bitti! "+n+" dokunuş. Tekrar için dokun";},10000);}
+n++;c.textContent=n;
+};`}
+];
+
+function gameDoc(g){
+return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;font-family:sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:manipulation}'+g.css+'</style></head><body>'+g.body+'<scr'+'ipt>'+g.js+'</scr'+'ipt></body></html>';
+}
+
+var feed=document.getElementById("feed");
+games.forEach(function(g){
+var card=document.createElement("div");
+card.className="card";
+card.innerHTML='<iframe sandbox="allow-scripts"></iframe><div class="info"><b>'+g.title+'</b><br>@'+g.creator+'<br><span>'+g.tags+'</span></div><button class="like">♥<br><small>0</small></button><button class="play">▶ Oyna</button>';
+feed.appendChild(card);
+var frame=card.querySelector("iframe"),play=card.querySelector(".play"),like=card.querySelector(".like"),likes=0;
+function stop(){frame.style.pointerEvents="none";play.textContent="▶ Oyna";}
+play.onclick=function(){
+if(frame.style.pointerEvents=="auto"){stop();}
+else{frame.style.pointerEvents="auto";play.textContent="✕ Bitir";}
+};
+like.onclick=function(){
+if(like.classList.contains("on")){like.classList.remove("on");likes--;}
+else{like.classList.add("on");likes++;}
+like.querySelector("small").textContent=likes;
+};
+new IntersectionObserver(function(list){
+list.forEach(function(e){
+if(e.isIntersecting){frame.srcdoc=gameDoc(g);}
+else{frame.srcdoc="";stop();}
+});
+},{root:feed,threshold:0.6}).observe(card);
+});
+
+var views={feed:document.getElementById("feed"),create:document.getElementById("create"),profile:document.getElementById("profile")};
+document.querySelectorAll("#nav button").forEach(function(b){
+b.onclick=function(){
+document.querySelectorAll("#nav button").forEach(function(x){x.classList.remove("on");});
+b.classList.add("on");
+views.feed.style.display=b.dataset.view=="feed"?"block":"none";
+views.create.style.display=b.dataset.view=="create"?"flex":"none";
+views.profile.style.display=b.dataset.view=="profile"?"flex":"none";
+};
+});
+</script>
 </body>
 </html>
