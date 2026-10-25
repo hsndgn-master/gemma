@@ -27,11 +27,18 @@ html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-sys
 .pname{font-size:22px;font-weight:700}
 .pstat{font-size:16px;opacity:.7}
 .chip{background:#1f1f29;border-radius:14px;padding:10px 18px;font-size:16px}
+.panel input{width:100%;max-width:340px;background:#1f1f29;border:1px solid #33333f;border-radius:12px;color:#fff;padding:14px;font-size:16px;outline:none}
+.abtn{width:100%;max-width:340px;background:#fff;color:#000;border:0;border-radius:12px;padding:14px;font-size:17px;font-weight:700}
+.abtn:disabled{opacity:.5}
+.alink{background:none;border:0;color:#a78bfa;font-size:15px;padding:6px}
+.amsg{min-height:20px;font-size:15px;color:#fca5a5;max-width:340px}
+.amsg.ok{color:#86efac}
 #nav{position:fixed;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#000;border-top:1px solid #2a2a33;display:flex;align-items:center;justify-content:space-around;z-index:10}
 #nav button{background:none;border:0;color:#888;font-size:28px;width:70px;height:56px}
 #nav button.on{color:#fff}
 #nav button.plus{background:#fff;color:#000;border-radius:14px;width:56px;height:40px;font-size:26px;font-weight:700}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <div id="logo">Gemma</div>
@@ -44,14 +51,22 @@ html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-sys
 <button data-view="profile">☺</button>
 </div>
 <script>
+var SB_URL="https://ohheayjmexguxfgprzlo.supabase.co";
+var SB_KEY="sb_publishable_HNpAnQXpp-I-IJCq8bRhkw__fM72Oa7";
+var sb=window.supabase.createClient(SB_URL,SB_KEY);
+var me=null;
+var likedSet={};
+var likeCounts={};
+var follows={};
+
 var games=[
-{title:"Balon Patlat",creator:"gemma",desc:"Balonlar kaçmadan hepsini patlat!",tags:"#refleks #kolay",
+{id:"balon",title:"Balon Patlat",creator:"gemma",desc:"Balonlar kaçmadan hepsini patlat!",tags:"#refleks #kolay",
 css:`body{background:#1e3a8a}#s{position:absolute;top:110px;left:50%;transform:translateX(-50%);font-size:52px;z-index:5}.b{position:absolute;bottom:-70px;width:64px;height:64px;border-radius:50%;animation:up 3.5s linear forwards}@keyframes up{to{bottom:105%}}`,
 body:`<div id="s">0</div>`,
 js:`var s=0,sc=document.getElementById("s");
 function spawn(){var b=document.createElement("div");b.className="b";b.style.left=(Math.random()*80+5)+"%";b.style.background="hsl("+Math.random()*360+",80%,60%)";b.onclick=function(){s++;sc.textContent=s;b.remove();};document.body.appendChild(b);setTimeout(function(){b.remove();},3500);}
 setInterval(spawn,700);`},
-{title:"Refleks Testi",creator:"ayse_oyun",desc:"Ekran yeşile dönünce olabildiğince hızlı dokun.",tags:"#refleks #hız",
+{id:"refleks",title:"Refleks Testi",creator:"ayse_oyun",desc:"Ekran yeşile dönünce olabildiğince hızlı dokun.",tags:"#refleks #hız",
 css:`body{display:flex;align-items:center;justify-content:center;background:#1e3a8a;text-align:center;font-size:30px;padding:20px}`,
 body:`<div id="t">Başlamak için dokun</div>`,
 js:`var t=document.getElementById("t"),state=0,start=0,timer;
@@ -60,7 +75,7 @@ if(state==0){state=1;t.textContent="Bekle...";document.body.style.background="#7
 else if(state==1){clearTimeout(timer);state=0;document.body.style.background="#1e3a8a";t.textContent="Çok erken! Tekrar dokun";}
 else{state=0;document.body.style.background="#1e3a8a";t.textContent=(Date.now()-start)+" ms. Tekrar dokun";}
 };`},
-{title:"10 Saniye Dokunma",creator:"mertcan",desc:"10 saniyede kaç kez dokunabilirsin?",tags:"#hız #rekor",
+{id:"dokunma",title:"10 Saniye Dokunma",creator:"mertcan",desc:"10 saniyede kaç kez dokunabilirsin?",tags:"#hız #rekor",
 css:`body{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#4c1d95;text-align:center;padding:20px}#c{font-size:90px}#m{font-size:22px}`,
 body:`<div id="c">0</div><div id="m">Başlamak için dokun</div>`,
 js:`var n=0,on=false,done=false,c=document.getElementById("c"),m=document.getElementById("m");
@@ -95,7 +110,25 @@ var r=el.getBoundingClientRect();
 burst(r.left+r.width/2,r.top+r.height/2,set);
 }
 
-var follows={};
+function trErr(m){
+m=(m||"").toLowerCase();
+if(m.indexOf("invalid login")>-1)return "E-posta veya şifre yanlış.";
+if(m.indexOf("already")>-1)return "Bu e-posta zaten kayıtlı.";
+if(m.indexOf("database error")>-1)return "Bu kullanıcı adı alınmış olabilir, başka bir tane dene.";
+if(m.indexOf("password")>-1)return "Şifre en az 6 karakter olmalı.";
+if(m.indexOf("rate limit")>-1)return "Çok fazla deneme yapıldı, biraz bekleyip tekrar dene.";
+if(m.indexOf("not confirmed")>-1)return "E-postanı doğrulaman gerekiyor.";
+if(m.indexOf("valid email")>-1||m.indexOf("invalid email")>-1)return "E-posta adresi geçersiz.";
+return "Hata: "+m;
+}
+
+function refreshLikes(){
+document.querySelectorAll(".like").forEach(function(b){
+var id=b.dataset.game;
+b.classList.toggle("on",!!likedSet[id]);
+b.querySelector("small").textContent=likeCounts[id]||0;
+});
+}
 function refreshFollow(){
 document.querySelectorAll(".follow").forEach(function(b){
 var on=!!follows[b.dataset.who];
@@ -104,11 +137,18 @@ b.textContent=on?"Takiptesin":"Takip et";
 });
 }
 function bindFollow(b){
-b.onclick=function(){
+b.onclick=async function(){
+if(!me){openProfile("sen");return;}
 var who=b.dataset.who;
-follows[who]=!follows[who];
-refreshFollow();
-if(follows[who]){burstFrom(b,["✨","💫","⭐","🤍"]);}
+if(who==me.username){return;}
+if(follows[who]){
+delete follows[who];refreshFollow();
+await sb.from("follows").delete().eq("follower_id",me.id).eq("followed",who);
+}else{
+follows[who]=true;refreshFollow();
+burstFrom(b,["✨","💫","⭐","🤍"]);
+await sb.from("follows").insert({follower_id:me.id,followed:who});
+}
 };
 }
 
@@ -120,17 +160,27 @@ games.forEach(function(g){
 var card=document.createElement("div");
 card.className="card";
 card.innerHTML='<iframe sandbox="allow-scripts"></iframe>'+
-'<div class="info"><div class="who"><button class="name" data-who="'+g.creator+'">@'+g.creator+'</button><button class="follow" data-who="'+g.creator+'">Takip et</button></div>'+
+'<div class="info"><div class="who"><button class="name">@'+g.creator+'</button><button class="follow" data-who="'+g.creator+'">Takip et</button></div>'+
 '<div class="title">'+g.title+'</div><div class="desc">'+g.desc+'</div><div class="tags">'+g.tags+'</div></div>'+
-'<button class="like">♥<br><small>0</small></button>';
+'<button class="like" data-game="'+g.id+'">♥<br><small>0</small></button>';
 feed.appendChild(card);
-var frame=card.querySelector("iframe"),like=card.querySelector(".like"),likes=0;
+var frame=card.querySelector("iframe"),like=card.querySelector(".like");
 card.querySelector(".name").onclick=function(){openProfile(g.creator);};
 bindFollow(card.querySelector(".follow"));
-like.onclick=function(){
-if(like.classList.contains("on")){like.classList.remove("on");likes--;}
-else{like.classList.add("on");likes++;burstFrom(like,["💗","💖","💕","✨"]);}
-like.querySelector("small").textContent=likes;
+like.onclick=async function(){
+if(!me){openProfile("sen");return;}
+if(likedSet[g.id]){
+delete likedSet[g.id];
+likeCounts[g.id]=Math.max(0,(likeCounts[g.id]||1)-1);
+refreshLikes();
+await sb.from("likes").delete().eq("user_id",me.id).eq("game_id",g.id);
+}else{
+likedSet[g.id]=true;
+likeCounts[g.id]=(likeCounts[g.id]||0)+1;
+refreshLikes();
+burstFrom(like,["💗","💖","💕","✨"]);
+await sb.from("likes").insert({user_id:me.id,game_id:g.id});
+}
 };
 new IntersectionObserver(function(list){
 list.forEach(function(e){
@@ -150,19 +200,74 @@ create.style.display=v=="create"?"flex":"none";
 profile.style.display=v=="profile"?"flex":"none";
 setNav(v);
 }
-function openProfile(name){
-var mine=games.filter(function(g){return g.creator==name;});
-var h='<div class="av">'+name.charAt(0).toUpperCase()+'</div><div class="pname">@'+name+'</div>';
-if(name!="sen"){
-h+='<button class="follow" data-who="'+name+'">Takip et</button><div class="pstat">'+mine.length+' oyun</div>';
-h+=mine.map(function(g){return '<div class="chip">'+g.title+'</div>';}).join("");
+
+var authMode="giris";
+function renderAuth(){
+var k=authMode=="kayit";
+profile.innerHTML='<div class="pname">'+(k?"Hesap oluştur":"Giriş yap")+'</div>'+
+'<div class="pstat">Beğenmek, takip etmek ve oyun paylaşmak için</div>'+
+(k?'<input id="a_user" placeholder="Kullanıcı adı (harf, rakam, _)" autocapitalize="none" autocorrect="off" maxlength="20">':'')+
+'<input id="a_mail" type="email" placeholder="E-posta" autocapitalize="none" autocorrect="off">'+
+'<input id="a_pass" type="password" placeholder="Şifre (en az 6 karakter)">'+
+'<button class="abtn" id="a_go">'+(k?"Kayıt ol":"Giriş yap")+'</button>'+
+'<div class="amsg" id="a_msg"></div>'+
+'<button class="alink" id="a_sw">'+(k?"Zaten hesabım var":"Hesabım yok, kayıt ol")+'</button>';
+var msg=document.getElementById("a_msg");
+document.getElementById("a_sw").onclick=function(){authMode=k?"giris":"kayit";renderAuth();};
+document.getElementById("a_go").onclick=async function(){
+var btn=document.getElementById("a_go");
+var mail=document.getElementById("a_mail").value.trim();
+var pass=document.getElementById("a_pass").value;
+msg.className="amsg";msg.textContent="";
+if(!mail||!pass){msg.textContent="E-posta ve şifreyi yaz.";return;}
+btn.disabled=true;
+try{
+if(k){
+var u=document.getElementById("a_user").value.trim().toLowerCase();
+if(!/^[a-z0-9_]{3,20}$/.test(u)){msg.textContent="Kullanıcı adı 3-20 karakter olmalı, sadece harf, rakam ve _ kullan.";btn.disabled=false;return;}
+var r=await sb.auth.signUp({email:mail,password:pass,options:{data:{username:u}}});
+if(r.error){msg.textContent=trErr(r.error.message);btn.disabled=false;return;}
+if(!r.data.session){msg.className="amsg ok";msg.textContent="Kayıt oldu. Şimdi giriş yap.";authMode="giris";btn.disabled=false;return;}
 }else{
-h+='<div class="pstat">Giriş ve profil yakında burada olacak</div>';
+var r2=await sb.auth.signInWithPassword({email:mail,password:pass});
+if(r2.error){msg.textContent=trErr(r2.error.message);btn.disabled=false;return;}
 }
+await loadUser();
+await loadSocial();
+openProfile("sen");
+}catch(e){
+msg.textContent="Bağlantı hatası, tekrar dene.";
+btn.disabled=false;
+}
+};
+}
+
+function openProfile(name){
+if(name=="sen"&&!me){renderAuth();showView("profile");return;}
+if(me&&name==me.username){name="sen";}
+var h="";
+if(name=="sen"){
+var nl=Object.keys(likedSet).length,nf=Object.keys(follows).length;
+h='<div class="av">'+me.username.charAt(0).toUpperCase()+'</div><div class="pname">@'+me.username+'</div>'+
+'<div class="pstat">'+nl+' beğeni · '+nf+' takip</div>'+
+'<button class="alink" id="a_out">Çıkış yap</button>';
 profile.innerHTML=h;
-var fb=profile.querySelector(".follow");
-if(fb){bindFollow(fb);}
+document.getElementById("a_out").onclick=async function(){
+await sb.auth.signOut();
+me=null;likedSet={};follows={};
+refreshLikes();refreshFollow();
+authMode="giris";
+renderAuth();
+};
+}else{
+var mine=games.filter(function(g){return g.creator==name;});
+h='<div class="av">'+name.charAt(0).toUpperCase()+'</div><div class="pname">@'+name+'</div>'+
+'<button class="follow" data-who="'+name+'">Takip et</button><div class="pstat">'+mine.length+' oyun</div>'+
+mine.map(function(g){return '<div class="chip">'+g.title+'</div>';}).join("");
+profile.innerHTML=h;
+bindFollow(profile.querySelector(".follow"));
 refreshFollow();
+}
 showView("profile");
 }
 
@@ -173,6 +278,33 @@ if(v=="profile"){openProfile("sen");}
 else{showView(v);}
 };
 });
+
+async function loadUser(){
+var r=await sb.auth.getSession();
+var s=r.data.session;
+if(s){
+var p=await sb.from("profiles").select("username").eq("id",s.user.id).single();
+me={id:s.user.id,username:p.data?p.data.username:"kullanici"};
+}else{me=null;}
+}
+async function loadSocial(){
+var l=await sb.from("likes").select("user_id,game_id");
+likeCounts={};likedSet={};
+(l.data||[]).forEach(function(x){
+likeCounts[x.game_id]=(likeCounts[x.game_id]||0)+1;
+if(me&&x.user_id==me.id){likedSet[x.game_id]=true;}
+});
+follows={};
+if(me){
+var f=await sb.from("follows").select("followed").eq("follower_id",me.id);
+(f.data||[]).forEach(function(x){follows[x.followed]=true;});
+}
+refreshLikes();
+refreshFollow();
+}
+(async function(){
+try{await loadUser();await loadSocial();}catch(e){}
+})();
 </script>
 </body>
 </html>
