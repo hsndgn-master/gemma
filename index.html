@@ -23,8 +23,13 @@ body.side #feed{border-radius:16px}
 .like{position:absolute;right:14px;bottom:90px;z-index:3;background:rgba(0,0,0,.45);color:#fff;border:0;border-radius:30px;width:56px;height:70px;font-size:26px}
 .like small{font-size:13px}
 .like.on{color:#ff3b5c}
+#meta{display:none}
+body.side #meta{display:flex;position:fixed;z-index:4;align-items:flex-end;gap:14px;padding-bottom:24px;pointer-events:none}
+#meta .like{position:static;flex-shrink:0;margin-bottom:66px;background:#1a1a22;pointer-events:auto}
+#meta .minfo{flex:1;min-width:0}
+body.side .card .info,body.side .card .like{display:none}
 .panel{position:fixed;top:0;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:80px 30px 30px;font-size:20px;background:#0d0d12;z-index:5}
-body.side .panel{left:96px;bottom:0}
+body.side .panel{left:180px;bottom:0}
 #create{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:50px}
 #create>*{flex-shrink:0}
 .av{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:800}
@@ -51,15 +56,22 @@ body.side .panel{left:96px;bottom:0}
 #nav button{background:none;border:0;color:#888;font-size:28px;width:70px;height:56px;display:flex;align-items:center;justify-content:center}
 #nav button.on{color:#fff}
 #nav button.plus{background:#fff;color:#000;border-radius:14px;width:56px;height:40px;font-size:26px;font-weight:700}
-body.side #nav{right:auto;top:64px;bottom:0;width:96px;height:auto;padding-bottom:0;padding-top:16px;border-top:0;border-right:1px solid #2a2a33;flex-direction:column;justify-content:flex-start;gap:18px}
-body.side #nav button{width:76px}
-body.side #nav button.plus{width:56px}
+.ic{display:flex;align-items:center;justify-content:center}
+.lb{display:none}
+body.side #nav{right:auto;top:64px;bottom:0;width:180px;height:auto;padding:16px 12px 0;border-top:0;border-right:1px solid #2a2a33;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:8px}
+body.side #nav button{width:100%;height:52px;justify-content:flex-start;gap:14px;padding:0 10px;border-radius:12px;font-size:28px}
+body.side #nav button.on{background:#17171d}
+body.side #nav button.plus{background:none;color:#fff}
+body.side #nav .ic{width:44px;height:32px}
+body.side #nav button.plus .ic{background:#fff;color:#000;border-radius:10px;font-size:24px;font-weight:700}
+body.side .lb{display:block;font-size:17px;font-weight:600}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <div id="logo">Gemma</div>
 <div id="feed"></div>
+<div id="meta"></div>
 <div class="panel" id="create">
 <div class="pname">Oyun oluştur</div>
 <div class="field">
@@ -94,9 +106,9 @@ body.side #nav button.plus{width:56px}
 </div>
 <div class="panel" id="profile"></div>
 <div id="nav">
-<button class="on" data-view="feed">⌂</button>
-<button class="plus" data-view="create">+</button>
-<button data-view="profile" aria-label="Profil"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.2"/><path d="M4 20.5c0-4.1 3.6-6.5 8-6.5s8 2.4 8 6.5z"/></svg></button>
+<button class="on" data-view="feed"><span class="ic">⌂</span><span class="lb">Ev</span></button>
+<button class="plus" data-view="create"><span class="ic">+</span><span class="lb">Oluştur</span></button>
+<button data-view="profile" aria-label="Profil"><span class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.2"/><path d="M4 20.5c0-4.1 3.6-6.5 8-6.5s8 2.4 8 6.5z"/></svg></span><span class="lb">Profil</span></button>
 </div>
 <script>
 var SB_URL="https://ohheayjmexguxfgprzlo.supabase.co";
@@ -111,16 +123,27 @@ var isPhone=/iPhone|iPod|Android.+Mobile/i.test(navigator.userAgent);
 if(!isPhone){document.body.classList.add("side");}
 function layout(){
 if(isPhone){return;}
-var SW=96,W=window.innerWidth-SW,H=window.innerHeight;
-var h=H,w=Math.round(h*9/16);
-if(w>W){w=W;h=Math.round(w*16/9);}
+var SW=180,G=24,MMAX=300,MMIN=200;
+var W=window.innerWidth-SW,H=window.innerHeight;
+var w=Math.round(H*9/16),h=H,mw=MMAX;
+if(w+G+MMAX>W){
+mw=Math.max(MMIN,Math.min(MMAX,W-G-w));
+if(w+G+mw>W){w=W-G-mw;h=Math.round(w*16/9);}
+}
+var left=SW+Math.max(0,(W-(w+G+mw))/2);
+var top=(H-h)/2;
 var f=document.getElementById("feed");
 f.style.right="auto";
 f.style.bottom="auto";
 f.style.width=w+"px";
 f.style.height=h+"px";
-f.style.left=(SW+(W-w)/2)+"px";
-f.style.top=((H-h)/2)+"px";
+f.style.left=left+"px";
+f.style.top=top+"px";
+var m=document.getElementById("meta");
+m.style.left=(left+w+G)+"px";
+m.style.top=top+"px";
+m.style.width=mw+"px";
+m.style.height=h+"px";
 }
 layout();
 window.addEventListener("resize",layout);
@@ -218,6 +241,35 @@ await sb.from("follows").insert({follower_id:me.id,followed:who});
 }
 };
 }
+async function doLike(g,btn){
+if(!me){openProfile("sen");return;}
+if(likedSet[g.id]){
+delete likedSet[g.id];
+likeCounts[g.id]=Math.max(0,(likeCounts[g.id]||1)-1);
+refreshLikes();
+await sb.from("likes").delete().eq("user_id",me.id).eq("game_id",g.id);
+}else{
+likedSet[g.id]=true;
+likeCounts[g.id]=(likeCounts[g.id]||0)+1;
+refreshLikes();
+burstFrom(btn,["💗","💖","💕","✨"]);
+await sb.from("likes").insert({user_id:me.id,game_id:g.id});
+}
+}
+
+function renderMeta(g){
+if(isPhone){return;}
+var m=document.getElementById("meta");
+m.innerHTML='<button class="like" data-game="'+g.id+'">♥<br><small>0</small></button>'+
+'<div class="minfo"><div class="who"><button class="name">@'+g.creator+'</button><button class="follow" data-who="'+g.creator+'">Takip et</button></div>'+
+'<div class="title">'+g.title+'</div><div class="desc">'+g.desc+'</div><div class="tags">'+g.tags+'</div></div>';
+m.querySelector(".name").onclick=function(){openProfile(g.creator);};
+bindFollow(m.querySelector(".follow"));
+var lk=m.querySelector(".like");
+lk.onclick=function(){doLike(g,lk);};
+refreshLikes();
+refreshFollow();
+}
 
 var feed=document.getElementById("feed");
 var profile=document.getElementById("profile");
@@ -234,28 +286,15 @@ feed.appendChild(card);
 var frame=card.querySelector("iframe"),like=card.querySelector(".like");
 card.querySelector(".name").onclick=function(){openProfile(g.creator);};
 bindFollow(card.querySelector(".follow"));
-like.onclick=async function(){
-if(!me){openProfile("sen");return;}
-if(likedSet[g.id]){
-delete likedSet[g.id];
-likeCounts[g.id]=Math.max(0,(likeCounts[g.id]||1)-1);
-refreshLikes();
-await sb.from("likes").delete().eq("user_id",me.id).eq("game_id",g.id);
-}else{
-likedSet[g.id]=true;
-likeCounts[g.id]=(likeCounts[g.id]||0)+1;
-refreshLikes();
-burstFrom(like,["💗","💖","💕","✨"]);
-await sb.from("likes").insert({user_id:me.id,game_id:g.id});
-}
-};
+like.onclick=function(){doLike(g,like);};
 new IntersectionObserver(function(list){
 list.forEach(function(e){
-if(e.isIntersecting){frame.srcdoc=gameDoc(g);}
+if(e.isIntersecting){frame.srcdoc=gameDoc(g);renderMeta(g);}
 else{frame.srcdoc="";}
 });
 },{root:feed,threshold:0.6}).observe(card);
 });
+renderMeta(games[0]);
 
 function setNav(v){
 document.querySelectorAll("#nav button").forEach(function(x){
