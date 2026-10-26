@@ -463,6 +463,10 @@ refreshFollow();
 (async function(){
 try{await loadUser();await loadSocial();}catch(e){}
 })();
+document.querySelector("#nav .plus").onclick=function(){
+if(!me){openProfile("sen");return;}
+location.href="/editor.html";
+};
 </script>
 </body>
 </html>
