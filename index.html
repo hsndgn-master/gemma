@@ -25,16 +25,28 @@ body.side #feed{border-radius:16px}
 .like.on{color:#ff3b5c}
 .panel{position:fixed;top:0;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:80px 30px 30px;font-size:20px;background:#0d0d12;z-index:5}
 body.side .panel{left:96px;bottom:0}
+#create{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:50px}
+#create>*{flex-shrink:0}
 .av{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:800}
 .pname{font-size:22px;font-weight:700}
 .pstat{font-size:16px;opacity:.7}
 .chip{background:#1f1f29;border-radius:14px;padding:10px 18px;font-size:16px}
-.panel input{width:100%;max-width:340px;background:#1f1f29;border:1px solid #33333f;border-radius:12px;color:#fff;padding:14px;font-size:16px;outline:none}
+.panel input,.panel textarea{width:100%;max-width:340px;background:#1f1f29;border:1px solid #33333f;border-radius:12px;color:#fff;padding:14px;font-size:16px;outline:none;font-family:inherit}
+.panel textarea{resize:none;height:120px}
 .abtn{width:100%;max-width:340px;background:#fff;color:#000;border:0;border-radius:12px;padding:14px;font-size:17px;font-weight:700}
 .abtn:disabled{opacity:.5}
 .alink{background:none;border:0;color:#a78bfa;font-size:15px;padding:6px}
 .amsg{min-height:20px;font-size:15px;color:#fca5a5;max-width:340px}
 .amsg.ok{color:#86efac}
+.field{width:100%;max-width:340px;text-align:left}
+.field label{display:block;font-size:14px;font-weight:600;margin-bottom:6px;opacity:.85}
+.field input,.field textarea{max-width:none}
+.count{font-size:12px;opacity:.55;text-align:right;margin-top:4px}
+.tagprev{font-size:14px;color:#a78bfa;margin-top:6px;min-height:18px}
+.thumbrow{display:flex;align-items:center;gap:14px}
+.thumbbox{width:72px;height:128px;border-radius:10px;background:#1f1f29;border:1px dashed #44444f;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;opacity:.9;text-align:center;flex-shrink:0}
+.thumbbox img{width:100%;height:100%;object-fit:cover}
+.pickbtn{background:#1f1f29;border:1px solid #33333f;border-radius:12px;padding:12px 16px;font-size:15px;font-weight:600;color:#fff;display:inline-block}
 #nav{position:fixed;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#000;border-top:1px solid #2a2a33;display:flex;align-items:center;justify-content:space-around;z-index:10}
 #nav button{background:none;border:0;color:#888;font-size:28px;width:70px;height:56px;display:flex;align-items:center;justify-content:center}
 #nav button.on{color:#fff}
@@ -48,7 +60,38 @@ body.side #nav button.plus{width:56px}
 <body>
 <div id="logo">Gemma</div>
 <div id="feed"></div>
-<div class="panel" id="create">Oyun oluşturma ekranı<br>yakında burada olacak</div>
+<div class="panel" id="create">
+<div class="pname">Oyun oluştur</div>
+<div class="field">
+<label>Oyun fikrin (prompt)</label>
+<textarea id="c_prompt" maxlength="500" placeholder="Örn: Neon renkli bir uzayda küpleri toplayan 3D bir top oyunu"></textarea>
+<div class="count" id="c_pc">0/500</div>
+</div>
+<div class="field">
+<label>Thumbnail (kapak resmi)</label>
+<div class="thumbrow">
+<div class="thumbbox" id="c_tb">Resim yok</div>
+<label class="pickbtn">Resim seç<input id="c_thumb" type="file" accept="image/*" style="display:none"></label>
+</div>
+</div>
+<div class="field">
+<label>Başlık</label>
+<input id="c_title" maxlength="40" placeholder="Oyunun adı">
+<div class="count" id="c_tc">0/40</div>
+</div>
+<div class="field">
+<label>Açıklama</label>
+<input id="c_desc" maxlength="120" placeholder="Oyun hakkında kısa bir cümle">
+<div class="count" id="c_dc">0/120</div>
+</div>
+<div class="field">
+<label>Hashtag'ler (en fazla 5)</label>
+<input id="c_tags" maxlength="80" placeholder="refleks 3d uzay" autocapitalize="none" autocorrect="off">
+<div class="tagprev" id="c_tp"></div>
+</div>
+<button class="abtn" id="c_go">Oyunu oluştur</button>
+<div class="amsg" id="c_msg"></div>
+</div>
 <div class="panel" id="profile"></div>
 <div id="nav">
 <button class="on" data-view="feed">⌂</button>
@@ -299,9 +342,61 @@ document.querySelectorAll("#nav button").forEach(function(b){
 b.onclick=function(){
 var v=b.dataset.view;
 if(v=="profile"){openProfile("sen");}
+else if(v=="create"){
+if(!me){openProfile("sen");return;}
+showView("create");
+}
 else{showView(v);}
 };
 });
+
+var draft={thumb:null};
+function parseTags(v){
+return v.split(/[\s,]+/).filter(Boolean).map(function(t){
+return "#"+t.replace(/^#+/,"").replace(/[^\p{L}\p{N}_]/gu,"");
+}).filter(function(t){return t.length>1;}).slice(0,5);
+}
+function bindCounter(inputId,countId,max){
+var i=document.getElementById(inputId),c=document.getElementById(countId);
+i.addEventListener("input",function(){c.textContent=i.value.length+"/"+max;});
+}
+bindCounter("c_prompt","c_pc",500);
+bindCounter("c_title","c_tc",40);
+bindCounter("c_desc","c_dc",120);
+document.getElementById("c_tags").addEventListener("input",function(){
+document.getElementById("c_tp").textContent=parseTags(this.value).join(" ");
+});
+document.getElementById("c_thumb").onchange=function(e){
+var f=e.target.files[0];
+if(!f){return;}
+var r=new FileReader();
+r.onload=function(){
+var img=new Image();
+img.onload=function(){
+var c=document.createElement("canvas");
+c.width=360;c.height=640;
+var x=c.getContext("2d");
+var s=Math.max(360/img.width,640/img.height);
+var w=img.width*s,h=img.height*s;
+x.drawImage(img,(360-w)/2,(640-h)/2,w,h);
+draft.thumb=c.toDataURL("image/jpeg",0.7);
+document.getElementById("c_tb").innerHTML='<img src="'+draft.thumb+'">';
+};
+img.src=r.result;
+};
+r.readAsDataURL(f);
+};
+document.getElementById("c_go").onclick=function(){
+var msg=document.getElementById("c_msg");
+var p=document.getElementById("c_prompt").value.trim();
+var t=document.getElementById("c_title").value.trim();
+msg.className="amsg";
+if(p.length<10){msg.textContent="Oyun fikrini biraz daha ayrıntılı yaz (en az 10 karakter).";return;}
+if(!t){msg.textContent="Oyuna bir başlık yaz.";return;}
+if(!draft.thumb){msg.textContent="Bir thumbnail resmi seç.";return;}
+msg.className="amsg ok";
+msg.textContent="Bilgilerin hazır. Yapay zeka bağlantısını bir sonraki adımda kuracağız.";
+};
 
 async function loadUser(){
 var r=await sb.auth.getSession();
