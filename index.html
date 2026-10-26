@@ -8,6 +8,7 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-system,sans-serif;overflow:hidden}
 #feed{position:fixed;top:0;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch}
+body.side #feed{border-radius:16px}
 .card{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#16161d;overflow:hidden}
 .card iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
 #logo{position:fixed;top:calc(env(safe-area-inset-top) + 10px);left:16px;text-align:left;font-size:30px;font-weight:900;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.6);z-index:20;pointer-events:none}
@@ -23,6 +24,7 @@ html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-sys
 .like small{font-size:13px}
 .like.on{color:#ff3b5c}
 .panel{position:fixed;top:0;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:80px 30px 30px;font-size:20px;background:#0d0d12;z-index:5}
+body.side .panel{left:96px;bottom:0}
 .av{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:800}
 .pname{font-size:22px;font-weight:700}
 .pstat{font-size:16px;opacity:.7}
@@ -34,9 +36,12 @@ html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-sys
 .amsg{min-height:20px;font-size:15px;color:#fca5a5;max-width:340px}
 .amsg.ok{color:#86efac}
 #nav{position:fixed;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#000;border-top:1px solid #2a2a33;display:flex;align-items:center;justify-content:space-around;z-index:10}
-#nav button{background:none;border:0;color:#888;font-size:28px;width:70px;height:56px}
+#nav button{background:none;border:0;color:#888;font-size:28px;width:70px;height:56px;display:flex;align-items:center;justify-content:center}
 #nav button.on{color:#fff}
 #nav button.plus{background:#fff;color:#000;border-radius:14px;width:56px;height:40px;font-size:26px;font-weight:700}
+body.side #nav{right:auto;top:64px;bottom:0;width:96px;height:auto;padding-bottom:0;padding-top:16px;border-top:0;border-right:1px solid #2a2a33;flex-direction:column;justify-content:flex-start;gap:18px}
+body.side #nav button{width:76px}
+body.side #nav button.plus{width:56px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
@@ -48,7 +53,7 @@ html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-sys
 <div id="nav">
 <button class="on" data-view="feed">⌂</button>
 <button class="plus" data-view="create">+</button>
-<button data-view="profile">☺</button>
+<button data-view="profile" aria-label="Profil"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.2"/><path d="M4 20.5c0-4.1 3.6-6.5 8-6.5s8 2.4 8 6.5z"/></svg></button>
 </div>
 <script>
 var SB_URL="https://ohheayjmexguxfgprzlo.supabase.co";
@@ -58,6 +63,25 @@ var me=null;
 var likedSet={};
 var likeCounts={};
 var follows={};
+
+var isPhone=/iPhone|iPod|Android.+Mobile/i.test(navigator.userAgent);
+if(!isPhone){document.body.classList.add("side");}
+function layout(){
+if(isPhone){return;}
+var SW=96,W=window.innerWidth-SW,H=window.innerHeight;
+var h=H,w=Math.round(h*9/16);
+if(w>W){w=W;h=Math.round(w*16/9);}
+var f=document.getElementById("feed");
+f.style.right="auto";
+f.style.bottom="auto";
+f.style.width=w+"px";
+f.style.height=h+"px";
+f.style.left=(SW+(W-w)/2)+"px";
+f.style.top=((H-h)/2)+"px";
+}
+layout();
+window.addEventListener("resize",layout);
+window.addEventListener("orientationchange",layout);
 
 var games=[
 {id:"balon",title:"Balon Patlat",creator:"gemma",desc:"Balonlar kaçmadan hepsini patlat!",tags:"#refleks #kolay",
