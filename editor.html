@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gemma Editör</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0d0d12;color:#fff;font-family:-apple-system,sans-serif}
+button,select,input{font:inherit}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #2a2a33}
+.bar b{flex:1;font-size:18px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.btn{background:#fff;color:#000;border:0;border-radius:10px;padding:9px 14px;font-weight:700}
+.btn.g{background:#1f1f29;color:#fff}
+.in{padding:16px;max-width:560px;margin:0 auto}
+.card{display:flex;align-items:center;gap:10px;background:#1a1a22;border-radius:14px;padding:14px;margin-top:10px}
+.card span{flex:1;font-weight:600;padding:6px 0}
+#ed{height:100%;display:none;flex-direction:column}
+.main{flex:1;display:flex;min-height:0}
+.pv{flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:10px}
+#stage{position:relative;overflow:hidden;border-radius:14px;height:min(72vh,680px);aspect-ratio:9/16}
+.side{flex:1;overflow-y:auto;padding:10px 14px 40px;min-width:0}
+.tabs{display:flex;gap:8px;margin-bottom:10px}
+.tab{flex:1;background:#1f1f29;border:0;color:#aaa;border-radius:10px;padding:10px}
+.tab.on{background:#fff;color:#000;font-weight:700}
+.row{display:flex;gap:8px;align-items:center;margin:6px 0}
+.row label{width:96px;font-size:14px;opacity:.8;flex-shrink:0}
+.row input[type=number],.row input[type=text],.row select{flex:1;min-width:0;background:#1f1f29;border:1px solid #33333f;border-radius:10px;color:#fff;padding:10px}
+.row input[type=color]{width:60px;height:40px;border:0;background:none}
+.emo{display:flex;flex-wrap:wrap;gap:6px}
+.emo button{background:#1f1f29;border:2px solid transparent;border-radius:10px;font-size:26px;padding:6px 10px}
+.emo button.on{border-color:#fff}
+.rule{background:#1a1a22;border-radius:14px;padding:12px;margin:10px 0}
+.hint{font-size:13px;opacity:.6;margin:12px 0 6px}
+@media(max-width:700px){.main{flex-direction:column}.pv{padding:6px}#stage{height:38vh}}
+</style></head><body>
+<div id="list"><div class="bar"><button class="btn g" id="home">←</button><b>Projelerim</b><button class="btn" id="new">+ Yeni proje</button></div><div class="in" id="pl"></div></div>
+<div id="ed"><div class="bar"><button class="btn g" id="back">←</button><b id="pn"></b><button class="btn g" id="mode"></button><button class="btn" id="pub">Yayınla</button></div>
+<div class="main"><div class="pv"><div id="stage"></div></div>
+<div class="side"><div class="tabs"><button class="tab" data-tab="obj">Nesneler</button><button class="tab" data-tab="rul">Kurallar</button></div><div id="panel"></div></div></div></div>
+<script src="/engine.js"></script>
+<script>
+var K="gemma_projects",P=[],cur=null,sel=null,mode="edit",tab="obj",ctrl=null;
+var EM=["😀","🐱","🐶","⭐","🍎","🚀","👾","💎","🎈","🌙","🔥","🦊","🪨","🏆","🎯","❤️"];
+var WH=[["start","Oyun başlayınca"],["tap","Nesneye dokunulunca"],["every","Her … saniyede"]];
+var DO=[["move","Taşı"],["jump","Rastgele yere git"],["rotate","Döndür"],["grow","Büyüt / küçült (%)"],["hide","Gizle"],["score","Skor ekle"],["win","Kazan"],["lose","Kaybet"]];
+try{P=JSON.parse(localStorage.getItem(K))||[];}catch(e){P=[];}
+function $(i){return document.getElementById(i);}
+function sv(){try{localStorage.setItem(K,JSON.stringify(P));}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function fo(id){return cur.objects.filter(function(o){return o.id==id;})[0];}
+function stop(){if(ctrl){ctrl.stop();ctrl=null;}}
+function showList(){
+stop();$("ed").style.display="none";$("list").style.display="block";
+$("pl").innerHTML=P.map(function(p,i){return '<div class="card"><span data-o="'+i+'">'+esc(p.name)+'</span><button class="btn g" data-d="'+i+'">Sil</button></div>';}).join("")||'<p style="opacity:.6">Henüz proje yok. "+ Yeni proje" ile başla.</p>';
+}
+$("pl").onclick=function(e){
+var x=e.target.dataset;
+if(x.o!=null)openP(+x.o);
+else if(x.d!=null){if(confirm("Bu proje silinsin mi?")){P.splice(+x.d,1);sv();showList();}}
+};
+$("new").onclick=function(){
+P.unshift({id:Date.now().toString(36),name:"Yeni proje",bg:"#1e3a8a",nid:2,objects:[{id:1,e:"⭐",x:50,y:50,s:20,r:0,drag:false}],rules:[{when:{t:"tap",o:1},do:{t:"jump",o:1}}]});
+sv();openP(0);
+};
+$("home").onclick=function(){location.href="/";};
+$("back").onclick=function(){showList();};
+$("pub").onclick=function(){alert("Yayınlama bir sonraki adımda eklenecek.");};
+$("mode").onclick=function(){mode=mode=="edit"?"play":"edit";modeBtn();stage();};
+function modeBtn(){$("mode").textContent=mode=="edit"?"▶ Oyna":"✎ Düzenle";}
+function openP(i){
+cur=P[i];sel=cur.objects.length?cur.objects[0].id:null;mode="edit";tab="obj";
+$("list").style.display="none";$("ed").style.display="flex";
+$("pn").textContent=cur.name;modeBtn();stage();panel();
+}
+function stage(){
+stop();var box=$("stage");
+if(mode=="play")ctrl=GemmaEngine.run(box,cur);
+else ctrl=GemmaEngine.run(box,cur,{edit:1,sel:sel,
+onselect:function(id){sel=id;panel();},
+onmove:function(id,x,y){var o=fo(id);o.x=Math.round(x);o.y=Math.round(y);sv();stage();panel();}});
+}
+function sl(a,v,at){return '<select '+at+'>'+a.map(function(x){return '<option value="'+x[0]+'"'+(x[0]==v?" selected":"")+'>'+x[1]+'</option>';}).join("")+'</select>';}
+function ob(v,at){return sl(cur.objects.map(function(o){return [o.id,o.e+" "+o.id];}),v,at);}
+function nm(v,at){return '<input type="number" value="'+v+'" '+at+'>';}
+function rw(l,c){return '<div class="row"><label>'+l+'</label>'+c+'</div>';}
+function fix(r){
+var f=cur.objects[0]?cur.objects[0].id:0;
+if(!fo(r.when.o))r.when.o=f;if(r.when.sec==null)r.when.sec=1;
+if(!fo(r.do.o))r.do.o=f;if(r.do.v==null)r.do.v=1;if(r.do.v2==null)r.do.v2=0;
+}
+function ruleH(r,i){
+fix(r);var w=r.when,d=r.do,a='data-r="'+i+'" data-p=';
+var h='<div class="rule">'+rw("Ne zaman",sl(WH,w.t,a+'"w.t"'));
+if(w.t=="tap")h+=rw("Hangisi",ob(w.o,a+'"w.o"'));
+if(w.t=="every")h+=rw("Saniye",nm(w.sec,a+'"w.sec"'));
+h+=rw("Ne olsun",sl(DO,d.t,a+'"d.t"'));
+if("move jump rotate grow hide".indexOf(d.t)>-1)h+=rw("Hangisi",ob(d.o,a+'"d.o"'));
+if(d.t=="move")h+=rw("Sağa (+) Sola (−)",nm(d.v,a+'"d.v"'))+rw("Aşağı (+) Yukarı (−)",nm(d.v2,a+'"d.v2"'));
+if(d.t=="rotate")h+=rw("Derece",nm(d.v,a+'"d.v"'));
+if(d.t=="grow")h+=rw("Yüzde",nm(d.v,a+'"d.v"'));
+if(d.t=="score")h+=rw("Sayı",nm(d.v,a+'"d.v"'));
+return h+'<button class="btn g" data-dr="'+i+'">Kuralı sil</button></div>';
+}
+function panel(){
+document.querySelectorAll(".tab").forEach(function(b){b.classList.toggle("on",b.dataset.tab==tab);});
+var h="";
+if(tab=="obj"){
+h+=rw("İsim",'<input type="text" data-g="name" maxlength="30" value="'+esc(cur.name)+'">')+rw("Arka plan",'<input type="color" data-g="bg" value="'+cur.bg+'">');
+h+='<p class="hint">Nesne eklemek için dokun:</p><div class="emo">'+EM.map(function(e){return '<button data-a="'+e+'">'+e+'</button>';}).join("")+'</div>';
+h+='<p class="hint">Sahnedeki nesneler (sahnede sürükleyerek de taşıyabilirsin):</p><div class="emo">'+cur.objects.map(function(o){return '<button class="'+(o.id==sel?"on":"")+'" data-s="'+o.id+'">'+o.e+'</button>';}).join("")+'</div>';
+var o=fo(sel);
+if(o)h+='<div class="rule">'+[["x","Sol-sağ (0-100)"],["y","Yukarı-aşağı (0-100)"],["s","Boyut"],["r","Dönüş (derece)"]].map(function(f){return rw(f[1],'<input type="number" data-f="'+f[0]+'" value="'+o[f[0]]+'">');}).join("")+rw("Sürüklensin",'<input type="checkbox" data-f="drag"'+(o.drag?" checked":"")+'>')+'<button class="btn g" data-del="1">Nesneyi sil</button></div>';
+}else{
+h+=cur.rules.map(ruleH).join("")+'<button class="btn" data-nr="1">+ Kural ekle</button>';
+}
+$("panel").innerHTML=h;
+}
+document.querySelectorAll(".tab").forEach(function(b){b.onclick=function(){tab=b.dataset.tab;panel();};});
+$("panel").onclick=function(e){
+var d=e.target.closest("button");if(!d)return;var x=d.dataset;
+if(x.a){var o={id:cur.nid++,e:x.a,x:50,y:50,s:20,r:0,drag:false};cur.objects.push(o);sel=o.id;}
+else if(x.s){sel=+x.s;}
+else if(x.del){cur.objects=cur.objects.filter(function(o){return o.id!=sel;});sel=cur.objects.length?cur.objects[0].id:null;}
+else if(x.nr){var f=cur.objects[0]?cur.objects[0].id:0;cur.rules.push({when:{t:"tap",o:f},do:{t:"score",v:1}});}
+else if(x.dr){cur.rules.splice(+x.dr,1);}
+else return;
+sv();stage();panel();
+};
+$("panel").onchange=function(e){
+var t=e.target,x=t.dataset,r;
+if(x.f){var o=fo(sel);o[x.f]=t.type=="checkbox"?t.checked:+t.value;}
+else if(x.g){cur[x.g]=t.value;$("pn").textContent=cur.name;}
+else if(x.p){r=cur.rules[+x.r];var k=x.p.split("."),g=k[0]=="w"?r.when:r.do;g[k[1]]=k[1]=="t"?t.value:+t.value;}
+else return;
+sv();stage();if(x.p&&x.p.slice(2)=="t")panel();
+};
+showList();
+</script></body></html>
