@@ -110,10 +110,11 @@ stop();var box=$("stage");
 if(mode=="play")ctrl=GemmaEngine.run(box,cur);
 else ctrl=GemmaEngine.run(box,cur,{edit:1,sel:sel,
 onselect:function(id){sel=id;if(ctrl)ctrl.select(id);panel();},
+onedit:function(id,t){var o=fo(id);if(!o)return;o.tx=t;sv();panel();},
 onmove:function(id,x,y){var o=fo(id);if(!o)return;o.x=Math.round(x);o.y=Math.round(y);sv();panel();}});
 }
 function sl(a,v,at){return '<select '+at+'>'+a.map(function(x){return '<option value="'+x[0]+'"'+(x[0]==v?" selected":"")+'>'+x[1]+'</option>';}).join("")+'</select>';}
-function ob(v,at){return sl(cur.objects.map(function(o){return [o.id,(isSp(o)?"🖼️":o.e)+" "+o.id];}),v,at);}
+function ob(v,at){return sl(cur.objects.map(function(o){return [o.id,(isSp(o)?"🖼️":o.tx!=null?o.tx.slice(0,8):o.e)+" "+o.id];}),v,at);}
 function nm(v,at){return '<input type="number" value="'+v+'" '+at+'>';}
 function rw(l,c){return '<div class="row"><label>'+l+'</label>'+c+'</div>';}
 function fix(r){
@@ -158,7 +159,7 @@ h+=rw("İsim",'<input type="text" data-g="name" maxlength="30" value="'+esc(cur.
 h+='<button class="btn big" data-draw="new">✏️ Yeni karakter çiz</button>';
 h+='<button class="btn big g" data-addtext="1">🔤 Yazı ekle</button>';
 h+='<p class="hint">Hazır emoji (hızlı ekle):</p><div class="emo">'+EM.map(function(e){return '<button data-a="'+e+'">'+e+'</button>';}).join("")+'</div>';
-h+='<p class="hint">Sahnedeki nesneler (sahnede sürükleyerek de taşıyabilirsin):</p><div class="emo">'+cur.objects.map(function(o){return '<button class="'+(o.id==sel?"on":"")+'" data-s="'+o.id+'">'+(isSp(o)?'<img src="'+cur.sprites[o.sp]+'" style="width:30px;height:30px;display:block">':o.e)+'</button>';}).join("")+'</div>';
+h+='<p class="hint">Sahnedeki nesneler (sahnede sürükleyerek de taşıyabilirsin):</p><div class="emo">'+cur.objects.map(function(o){return '<button class="'+(o.id==sel?"on":"")+'" data-s="'+o.id+'">'+(isSp(o)?'<img src="'+cur.sprites[o.sp]+'" style="width:30px;height:30px;display:block">':o.tx!=null?'<span style="font-size:16px;font-weight:800">'+esc(o.tx.slice(0,6))+'</span>':o.e)+'</button>';}).join("")+'</div>';
 var o=fo(sel);
 if(o){
 h+='<div class="rule">'+[["x","Sol-sağ (0-100)"],["y","Yukarı-aşağı (0-100)"],["s","Boyut"],["r","Dönüş (derece)"]].map(function(f){return rw(f[1],'<input type="number" data-f="'+f[0]+'" value="'+o[f[0]]+'">');}).join("")+rw("Sürüklensin",'<input type="checkbox" data-f="drag"'+(o.drag?" checked":"")+'>')+rw("Başta gizli",'<input type="checkbox" data-f="hide"'+(o.hide?" checked":"")+'>');
@@ -175,7 +176,7 @@ document.querySelectorAll(".tab").forEach(function(b){b.onclick=function(){tab=b
 $("panel").onclick=function(e){
 var d=e.target.closest("button");if(!d)return;var x=d.dataset;
 if(x.draw){openSp(x.draw=="edit"&&fo(sel)?fo(sel).sp:null);return;}
-if(x.addtext){var o={id:cur.nid++,tx:"Yazı",c:"#ffffff",e:"🔤",x:50,y:50,s:8,r:0,drag:false};cur.objects.push(o);sel=o.id;}
+if(x.addtext){var o={id:cur.nid++,tx:"Yazı",c:"#ffffff",x:50,y:50,s:8,r:0,drag:false};cur.objects.push(o);sel=o.id;}
 else if(x.a){var o={id:cur.nid++,e:x.a,x:50,y:50,s:20,r:0,drag:false};cur.objects.push(o);sel=o.id;}
 else if(x.s){sel=+x.s;}
 else if(x.del){cur.objects=cur.objects.filter(function(o){return o.id!=sel;});sel=cur.objects.length?cur.objects[0].id:null;}
@@ -188,7 +189,7 @@ sv();stage();panel();
 };
 $("panel").onchange=function(e){
 var t=e.target,x=t.dataset,r;
-if(x.f){var o=fo(sel);o[x.f]=t.type=="checkbox"?t.checked:(x.f=="tx"||x.f=="c")?t.value:+t.value;}
+if(x.f){var o=fo(sel);o[x.f]=t.type=="checkbox"?t.checked:x.f=="tx"?(t.value||"Yazı"):x.f=="c"?t.value:+t.value;}
 else if(x.g){cur[x.g]=t.value;$("pn").textContent=cur.name;}
 else if(x.p){
 r=cur.rules[+x.r];
