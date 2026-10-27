@@ -60,7 +60,7 @@ objs.forEach(function(o){
 var d=document.createElement("div");
 d.style.cssText="position:absolute;line-height:1;user-select:none;-webkit-user-select:none;touch-action:none;transition:none";
 if(isSp(o)){d.style.backgroundImage="url("+spr[o.sp]+")";d.style.backgroundSize="contain";d.style.backgroundRepeat="no-repeat";d.style.backgroundPosition="center";}
-else if(o.tx!=null){d.textContent=o.tx;d.style.color=o.c||"#ffffff";d.style.whiteSpace="nowrap";d.style.fontWeight="800";d.style.textShadow="0 2px 6px rgba(0,0,0,.5)";}
+else if(o.tx!=null){d.textContent=o.tx;d.style.color=o.c||"#ffffff";d.style.whiteSpace="nowrap";d.style.fontWeight="800";d.style.fontFamily="-apple-system,sans-serif";d.style.textShadow="0 2px 6px rgba(0,0,0,.5)";}
 else d.textContent=o.e||"⭐";
 els[o.id]=d;put(o);box.appendChild(d);void d.offsetWidth;d.style.transition=TR;
 d.onpointerdown=function(ev){

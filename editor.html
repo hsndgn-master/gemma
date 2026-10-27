@@ -63,7 +63,7 @@ button,select,input{font:inherit}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
 <div id="list"><div class="bar"><button class="btn g" id="home">←</button><b>Projelerim</b><button class="btn" id="new">+ Yeni proje</button></div><div class="in" id="pl"></div></div>
-<div id="ed"><div class="bar"><button class="btn g" id="back">←</button><b id="pn"></b><button class="btn g" id="mode"></button><button class="btn" id="pub">Yayınla</button></div>
+<div id="ed"><div class="bar"><button class="btn g" id="back">←</button><b id="pn"></b><span id="cl" style="font-size:12px;opacity:.6;white-space:nowrap"></span><button class="btn g" id="mode"></button><button class="btn" id="pub">Yayınla</button></div>
 <div class="main"><div class="pv"><div id="stage"></div></div>
 <div class="side"><div class="tabs"><button class="tab" data-tab="obj">Nesneler</button><button class="tab" data-tab="rul">Kurallar</button></div><div id="panel"></div></div></div></div>
 <div id="sp">
@@ -98,7 +98,9 @@ var DO=[["move","Taşı"],["forward","İleri git (dönüş yönünde)"],["goto",
 var OBJ=["move","forward","goto","gotap","jump","rotate","grow","hide","show"];
 try{P=JSON.parse(localStorage.getItem(K))||[];}catch(e){P=[];}
 function $(i){return document.getElementById(i);}
-function sv(){try{
+function sv(){
+if(cur&&P.indexOf(cur)>-1){cur.ut=Date.now();cloudQ(cur.id);}
+try{
 P.forEach(function(p){if(!p.sprites)return;var u={};p.objects.forEach(function(o){if(o.sp)u[o.sp]=1;});Object.keys(p.sprites).forEach(function(k){if(!u[k])delete p.sprites[k];});});
 localStorage.setItem(K,JSON.stringify(P));
 }catch(e){if(!sv.w){sv.w=1;alert("Kayıt için yer kalmadı. Bazı projeleri silmen gerekebilir.");}}}
@@ -113,14 +115,14 @@ $("pl").innerHTML=P.map(function(p,i){return '<div class="card"><span data-o="'+
 $("pl").onclick=function(e){
 var x=e.target.dataset;
 if(x.o!=null)openP(+x.o);
-else if(x.d!=null){if(confirm("Bu proje silinsin mi?")){P.splice(+x.d,1);sv();showList();}}
+else if(x.d!=null){if(confirm("Bu proje silinsin mi?")){var did=P[+x.d].id;P.splice(+x.d,1);cur=null;sv();cloudDel(did);showList();}}
 };
 $("new").onclick=function(){
 P.unshift({id:Date.now().toString(36),name:"Yeni proje",bg:"#1e3a8a",nid:2,nsp:1,sprites:{},objects:[{id:1,e:"⭐",x:50,y:50,s:20,r:0,drag:false}],rules:[{when:{t:"tap",o:1},if:{t:"none",op:">",n:0},do:[{t:"jump",o:1,v:1,v2:0}]}]});
-sv();openP(0);
+cur=P[0];sv();openP(0);
 };
 $("home").onclick=function(){location.href="/";};
-$("back").onclick=function(){showList();};
+$("back").onclick=function(){flushAll();showList();};
 var API="https://gemma-api.hasanalid120.workers.dev",SBC=null,pth=null;
 function getSb(){if(!SBC)SBC=window.supabase.createClient("https://ohheayjmexguxfgprzlo.supabase.co","sb_publishable_HNpAnQXpp-I-IJCq8bRhkw__fM72Oa7");return SBC;}
 function pbTags(v){return v.split(/[\s,]+/).filter(Boolean).map(function(t){return "#"+t.replace(/^#+/,"").replace(/[^\p{L}\p{N}_]/gu,"");}).filter(function(t){return t.length>1;}).slice(0,5);}
@@ -270,6 +272,76 @@ else{var k=x.p.split("."),g=k[0]=="w"?r.when:r.if;g[k[1]]=(k[1]=="t"||k[1]=="op"
 sv();stage();if(x.p&&/(^|\.)t$/.test(x.p))panel();
 };
 
+/* ---- Bulut taslak senkronu ---- */
+var DEL_K="gemma_deleted",OWN_K="gemma_owner",pend={},syncing=false;
+function setCl(t){var e=$("cl");if(e)e.textContent=t;}
+function getDel(){try{return JSON.parse(localStorage.getItem(DEL_K))||[];}catch(e){return [];}}
+function setDel(a){try{localStorage.setItem(DEL_K,JSON.stringify(a));}catch(e){}}
+function lsSave(){try{localStorage.setItem(K,JSON.stringify(P));}catch(e){}}
+async function sess(){try{if(!window.supabase)return null;return (await getSb().auth.getSession()).data.session;}catch(e){return null;}}
+function cloudQ(id){
+clearTimeout(pend[id]);setCl("☁ Kaydediliyor…");
+pend[id]=setTimeout(function(){pushDraft(id);},1500);
+}
+function flushAll(){Object.keys(pend).forEach(function(id){clearTimeout(pend[id]);pushDraft(id);});}
+async function pushDraft(id){
+delete pend[id];
+var p=P.filter(function(x){return x.id==id;})[0];if(!p)return;
+var s=await sess();if(!s){setCl("Sadece bu cihazda");return;}
+try{
+var r=await fetch(API+"/drafts/"+encodeURIComponent(id),{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify(p)});
+if(r.ok)setCl("☁ Kaydedildi");
+else{var j={};try{j=await r.json();}catch(e){}setCl("☁ "+(j.error||"Kaydedilemedi"));}
+}catch(e){setCl("☁ Bağlantı yok");}
+}
+async function cloudDel(id){
+clearTimeout(pend[id]);delete pend[id];
+var a=getDel();a.push(id);setDel(a);
+var s=await sess();if(!s)return;
+try{
+var r=await fetch(API+"/drafts/"+encodeURIComponent(id),{method:"DELETE",headers:{Authorization:"Bearer "+s.access_token}});
+if(r.ok)setDel(getDel().filter(function(x){return x!=id;}));
+}catch(e){}
+}
+async function syncDrafts(){
+if(syncing)return;syncing=true;
+try{
+var s=await sess();if(!s)return;
+var uid=s.user.id,ow=null;
+try{ow=localStorage.getItem(OWN_K);}catch(e){}
+if(ow&&ow!=uid){P=[];setDel([]);lsSave();}
+try{localStorage.setItem(OWN_K,uid);}catch(e){}
+var H={Authorization:"Bearer "+s.access_token};
+var dl=getDel(),left=[];
+for(var i=0;i<dl.length;i++){
+try{var rd=await fetch(API+"/drafts/"+encodeURIComponent(dl[i]),{method:"DELETE",headers:H});if(!rd.ok)left.push(dl[i]);}catch(e){left.push(dl[i]);}
+}
+setDel(left);
+var r=await fetch(API+"/drafts",{headers:H});
+if(!r.ok)return;
+var items=(await r.json()).items||[],seen={},changed=false;
+for(var k=0;k<items.length;k++){
+var it=items[k];
+if(left.indexOf(it.id)>-1)continue;
+seen[it.id]=1;
+var loc=P.filter(function(x){return x.id==it.id;})[0];
+if(loc&&loc===cur&&$("ed").style.display=="flex")continue;
+if(!loc||(loc.ut||0)<it.ut){
+var g=await fetch(API+"/drafts/"+encodeURIComponent(it.id),{headers:H});
+if(!g.ok)continue;
+var np=await g.json();np.ut=it.ut;
+if(loc)P[P.indexOf(loc)]=np;else P.push(np);
+changed=true;
+}else if((loc.ut||0)>it.ut){pushDraft(it.id);}
+}
+P.forEach(function(p){
+if(!seen[p.id]&&left.indexOf(p.id)<0){if(!p.ut){p.ut=Date.now();changed=true;}pushDraft(p.id);}
+});
+if(changed){lsSave();if($("ed").style.display!="flex")showList();}
+}catch(e){}
+finally{syncing=false;}
+}
+
 /* ---- Çizim editörü ---- */
 var cv=$("cv"),cx=cv.getContext("2d"),tool="pen",hist=[],snap=null,st=null,spTarget=null;
 var TOOLS=[["pen","✏️ Kalem"],["eraser","🧽 Silgi"],["fill","🪣 Boya"],["line","╱ Çizgi"],["circle","◯ Daire"],["rect","▢ Kare"],["rrect","▢ Yuvarlak kare"]];
@@ -345,4 +417,6 @@ $("sp").style.display="none";
 sv();stage();panel();
 };
 showList();
+syncDrafts();
+document.addEventListener("visibilitychange",function(){if(document.hidden)flushAll();});
 </script></body></html>

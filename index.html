@@ -54,6 +54,11 @@ body.side .panel{left:180px;bottom:0}
 .thumbbox{width:72px;height:128px;border-radius:10px;background:#1f1f29;border:1px dashed #44444f;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;opacity:.9;text-align:center;flex-shrink:0}
 .thumbbox img{width:100%;height:100%;object-fit:cover}
 .pickbtn{background:#1f1f29;border:1px solid #33333f;border-radius:12px;padding:12px 16px;font-size:15px;font-weight:600;color:#fff;display:inline-block}
+.card .pw{position:absolute;left:0;right:0;bottom:7px;text-align:center;font-size:10px;letter-spacing:.8px;color:#fff;opacity:.5;pointer-events:none;z-index:3;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.pw b,#pw b{font-weight:700}
+body.side .card .pw{display:none}
+#pw{display:none}
+body.side #pw{display:block;position:fixed;z-index:4;writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;letter-spacing:1.2px;color:#fff;opacity:.4;pointer-events:none;white-space:nowrap}
 #nav{position:fixed;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#000;border-top:1px solid #2a2a33;display:flex;align-items:center;justify-content:space-around;z-index:10}
 #nav button{background:none;border:0;color:#888;font-size:28px;width:70px;height:56px;display:flex;align-items:center;justify-content:center}
 #nav button.on{color:#fff}
@@ -74,6 +79,7 @@ body.side .lb{display:block;font-size:17px;font-weight:600}
 <div id="logo">Gemma</div>
 <div id="feed"></div>
 <div id="meta"></div>
+<div id="pw">powered by <b>gemma engine</b></div>
 <div class="panel" id="create">
 <div class="pname">Oyun oluştur</div>
 <div class="field">
@@ -148,6 +154,9 @@ m.style.left=(left+w+G)+"px";
 m.style.top=top+"px";
 m.style.width=mw+"px";
 m.style.height=h+"px";
+var pw=document.getElementById("pw");
+pw.style.left=(left+w+6)+"px";
+pw.style.bottom=(top+14)+"px";
 }
 layout();
 window.addEventListener("resize",layout);
@@ -182,7 +191,7 @@ n++;c.textContent=n;
 
 var games=demoGames.slice();
 function engineDoc(p){
-return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;background:#000;user-select:none;-webkit-user-select:none;touch-action:manipulation}#g{position:absolute;top:0;left:0;right:0;bottom:0}</style></head><body><div id="g"></div><scr'+'ipt src="'+location.origin+'/engine.js"></scr'+'ipt><scr'+'ipt>GemmaEngine.run(document.getElementById("g"),'+JSON.stringify(p).replace(/</g,"\\u003c")+');</scr'+'ipt></body></html>';
+return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:-apple-system,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}#g{position:absolute;top:0;left:0;right:0;bottom:0}</style></head><body><div id="g"></div><scr'+'ipt src="'+location.origin+'/engine.js"></scr'+'ipt><scr'+'ipt>GemmaEngine.run(document.getElementById("g"),'+JSON.stringify(p).replace(/</g,"\\u003c")+');</scr'+'ipt></body></html>';
 }
 function gameDoc(g){
 return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;font-family:sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:manipulation}'+g.css+'</style></head><body>'+g.body+'<scr'+'ipt>'+g.js+'</scr'+'ipt></body></html>';
@@ -266,6 +275,7 @@ await sb.from("likes").insert({user_id:me.id,game_id:g.id});
 }
 
 function renderMeta(g){
+var pw=document.getElementById("pw");if(pw)pw.style.visibility=g.file_key?"visible":"hidden";
 if(isPhone){return;}
 var m=document.getElementById("meta");
 m.innerHTML='<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>'+
@@ -299,7 +309,8 @@ if(g.thumb_key){card.style.backgroundImage="url("+API+"/files/"+g.thumb_key+")";
 card.innerHTML='<iframe sandbox="allow-scripts"></iframe>'+
 '<div class="info"><div class="who"><button class="name">@'+esc(g.creator)+'</button><button class="follow" data-who="'+esc(g.creator)+'">Takip et</button></div>'+
 '<div class="title">'+esc(g.title)+'</div><div class="desc">'+esc(g.desc)+'</div><div class="tags">'+esc(g.tags)+'</div></div>'+
-'<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>';
+'<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>'+
+(g.file_key?'<div class="pw">powered by <b>gemma engine</b></div>':'');
 feed.appendChild(card);
 var frame=card.querySelector("iframe"),like=card.querySelector(".like");
 card.querySelector(".name").onclick=function(){openProfile(g.creator);};
@@ -397,6 +408,46 @@ btn.disabled=false;
 };
 }
 
+function avHtml(name,key,id){
+var st=key?' style="background:url('+esc(API+"/files/"+key)+') center/cover"':"";
+return '<div class="av"'+(id?' id="'+id+'"':"")+st+'>'+(key?"":esc(name.charAt(0).toUpperCase()))+'</div>';
+}
+function bindAvatar(){
+var inp=document.getElementById("av_in"),msg=document.getElementById("av_msg");
+if(!inp)return;
+var pick=function(){inp.click();};
+document.getElementById("av_ch").onclick=pick;
+document.getElementById("av_me").onclick=pick;
+inp.onchange=function(){
+var f=inp.files[0];if(!f)return;
+msg.className="amsg";msg.textContent="";
+if(f.type.indexOf("image/")!==0){msg.textContent="Lütfen bir resim seç.";return;}
+if(f.size>10*1024*1024){msg.textContent="Resim çok büyük (en fazla 10 MB).";return;}
+msg.textContent="Yükleniyor...";
+var r=new FileReader();
+r.onload=function(){
+var img=new Image();
+img.onerror=function(){msg.textContent="Resim okunamadı.";};
+img.onload=async function(){
+var c=document.createElement("canvas");c.width=c.height=256;
+var x=c.getContext("2d"),sc=Math.max(256/img.width,256/img.height),w=img.width*sc,h=img.height*sc;
+x.drawImage(img,(256-w)/2,(256-h)/2,w,h);
+var data=c.toDataURL("image/jpeg",0.85);
+try{
+var ss=(await sb.auth.getSession()).data.session;
+if(!ss){msg.textContent="Oturum bitti, tekrar giriş yap.";return;}
+var res=await fetch(API+"/avatar",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+ss.access_token},body:JSON.stringify({image:data})});
+var j={};try{j=await res.json();}catch(e){}
+if(!res.ok){msg.textContent=j.error||"Yüklenemedi.";return;}
+me.avatar_key=j.key;
+openProfile("sen");
+}catch(e){msg.textContent="Bağlantı hatası.";}
+};
+img.src=r.result;
+};
+r.readAsDataURL(f);
+};
+}
 function openProfile(name){
 if(name=="sen"&&!me){renderAuth();showView("profile");return;}
 if(me&&name==me.username){name="sen";}
@@ -404,12 +455,14 @@ var h="";
 if(name=="sen"){
 var nl=Object.keys(likedSet).length,nf=Object.keys(follows).length;
 var own=games.filter(function(g){return g.file_key&&g.creator==me.username;});
-h='<div class="av">'+esc(me.username.charAt(0).toUpperCase())+'</div><div class="pname">@'+esc(me.username)+'</div>'+
+h=avHtml(me.username,me.avatar_key,"av_me")+'<div class="pname">@'+esc(me.username)+'</div>'+
 '<div class="pstat">'+nl+' beğeni · '+nf+' takip</div>'+
+'<button class="alink" id="av_ch">Profil fotoğrafını değiştir</button><input id="av_in" type="file" accept="image/*" style="display:none"><div class="amsg" id="av_msg"></div>'+
 own.map(function(g){return '<div class="chip">'+esc(g.title)+' <button class="alink" data-del="'+esc(g.id)+'">Sil</button></div>';}).join("")+
 '<button class="alink" id="a_out">Çıkış yap</button>';
 profile.innerHTML=h;
 profile.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){delGame(b.dataset.del,b);};});
+bindAvatar();
 document.getElementById("a_out").onclick=async function(){
 await sb.auth.signOut();
 me=null;likedSet={};follows={};
@@ -419,12 +472,16 @@ renderAuth();
 };
 }else{
 var mine=games.filter(function(g){return g.creator==name;});
-h='<div class="av">'+esc(name.charAt(0).toUpperCase())+'</div><div class="pname">@'+esc(name)+'</div>'+
+h='<div class="av" id="av_o">'+esc(name.charAt(0).toUpperCase())+'</div><div class="pname">@'+esc(name)+'</div>'+
 '<button class="follow" data-who="'+esc(name)+'">Takip et</button><div class="pstat">'+mine.length+' oyun</div>'+
 mine.map(function(g){return '<div class="chip">'+esc(g.title)+'</div>';}).join("");
 profile.innerHTML=h;
 bindFollow(profile.querySelector(".follow"));
 refreshFollow();
+sb.from("profiles").select("avatar_key").eq("username",name).maybeSingle().then(function(r){
+var k=r.data&&r.data.avatar_key,el=document.getElementById("av_o");
+if(k&&el&&/^avatars\/[a-z0-9-]+\.jpg$/.test(k)&&profile.contains(el)){el.style.background="url("+API+"/files/"+k+") center/cover";el.textContent="";}
+});
 }
 showView("profile");
 }
@@ -493,8 +550,9 @@ async function loadUser(){
 var r=await sb.auth.getSession();
 var s=r.data.session;
 if(s){
-var p=await sb.from("profiles").select("username").eq("id",s.user.id).single();
-me={id:s.user.id,username:p.data?p.data.username:"kullanici"};
+var p=await sb.from("profiles").select("username,avatar_key").eq("id",s.user.id).single();
+if(p.error)p=await sb.from("profiles").select("username").eq("id",s.user.id).single();
+me={id:s.user.id,username:p.data?p.data.username:"kullanici",avatar_key:p.data?p.data.avatar_key:null};
 }else{me=null;}
 }
 async function loadSocial(){
