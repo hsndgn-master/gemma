@@ -45,7 +45,23 @@ button,select,input{font:inherit}
 .pal{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .pal button{width:34px;height:34px;border-radius:50%;border:2px solid #44444f}
 @media(max-width:700px){.main{flex-direction:column}.pv{padding:6px}#stage{height:38vh}}
-</style></head><body>
+#pb{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d12;z-index:60;display:none;flex-direction:column}
+.pbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 16px 60px}
+.pbody>div{max-width:420px;margin:0 auto}
+.pf{margin-top:14px}
+.pf label{display:block;font-size:14px;font-weight:600;margin-bottom:6px;opacity:.85}
+.pf input,.pf textarea{width:100%;background:#1f1f29;border:1px solid #33333f;border-radius:12px;color:#fff;padding:12px;font-size:16px;outline:none;font-family:inherit}
+.pf textarea{resize:none;height:80px}
+.pc{font-size:12px;opacity:.55;text-align:right;margin-top:4px}
+.ptp{font-size:14px;color:#a78bfa;margin-top:6px;min-height:18px}
+.pth{display:flex;align-items:center;gap:14px}
+.pthb{width:72px;height:128px;border-radius:10px;background:#1f1f29;border:1px dashed #44444f;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;text-align:center;flex-shrink:0}
+.pthb img{width:100%;height:100%;object-fit:cover}
+.pick{background:#1f1f29;border:1px solid #33333f;border-radius:12px;padding:12px 16px;font-size:15px;font-weight:600;display:inline-block}
+.amsg{min-height:20px;font-size:15px;color:#fca5a5;margin-top:12px}
+.amsg.ok{color:#86efac}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
 <div id="list"><div class="bar"><button class="btn g" id="home">←</button><b>Projelerim</b><button class="btn" id="new">+ Yeni proje</button></div><div class="in" id="pl"></div></div>
 <div id="ed"><div class="bar"><button class="btn g" id="back">←</button><b id="pn"></b><button class="btn g" id="mode"></button><button class="btn" id="pub">Yayınla</button></div>
 <div class="main"><div class="pv"><div id="stage"></div></div>
@@ -60,6 +76,16 @@ button,select,input{font:inherit}
 <div class="row"><label>Renk</label><input type="color" id="co" value="#ff3b5c"><label style="width:auto"><input type="checkbox" id="fl" checked> Dolu şekil</label></div>
 <div class="pal" id="pal"></div>
 <div class="tb"><button id="sp_u">↶ Geri al</button><button id="sp_c">Temizle</button></div>
+</div></div></div>
+<div id="pb">
+<div class="bar"><button class="btn g" id="pb_x">İptal</button><b>Oyunu yayınla</b></div>
+<div class="pbody"><div>
+<div class="pf"><label>Başlık</label><input id="pb_t" maxlength="40" placeholder="Oyunun adı"><div class="pc" id="pb_tc">0/40</div></div>
+<div class="pf"><label>Açıklama</label><textarea id="pb_d" maxlength="120" placeholder="Oyun hakkında kısa bir cümle"></textarea><div class="pc" id="pb_dc">0/120</div></div>
+<div class="pf"><label>Hashtag'ler (en fazla 5)</label><input id="pb_g" maxlength="80" placeholder="refleks kolay uzay" autocapitalize="none" autocorrect="off"><div class="ptp" id="pb_gp"></div></div>
+<div class="pf"><label>Thumbnail (kapak resmi, isteğe bağlı)</label><div class="pth"><div class="pthb" id="pb_tb">Resim yok</div><label class="pick">Resim seç<input id="pb_f" type="file" accept="image/*" style="display:none"></label></div></div>
+<button class="btn big" id="pb_go">Yayınla</button>
+<div class="amsg" id="pb_m"></div>
 </div></div></div>
 <script src="/engine.js"></script>
 <script>
@@ -95,7 +121,52 @@ sv();openP(0);
 };
 $("home").onclick=function(){location.href="/";};
 $("back").onclick=function(){showList();};
-$("pub").onclick=function(){alert("Yayınlama bir sonraki adımda eklenecek.");};
+var API="https://gemma-api.hasanalid120.workers.dev",SBC=null,pth=null;
+function getSb(){if(!SBC)SBC=window.supabase.createClient("https://ohheayjmexguxfgprzlo.supabase.co","sb_publishable_HNpAnQXpp-I-IJCq8bRhkw__fM72Oa7");return SBC;}
+function pbTags(v){return v.split(/[\s,]+/).filter(Boolean).map(function(t){return "#"+t.replace(/^#+/,"").replace(/[^\p{L}\p{N}_]/gu,"");}).filter(function(t){return t.length>1;}).slice(0,5);}
+function pbCount(i,c,m){$(c).textContent=$(i).value.length+"/"+m;}
+$("pb_t").oninput=function(){pbCount("pb_t","pb_tc",40);};
+$("pb_d").oninput=function(){pbCount("pb_d","pb_dc",120);};
+$("pb_g").oninput=function(){$("pb_gp").textContent=pbTags(this.value).join(" ");};
+$("pb_x").onclick=function(){$("pb").style.display="none";};
+$("pb_f").onchange=function(e){
+var f=e.target.files[0];if(!f)return;
+var r=new FileReader();
+r.onload=function(){var img=new Image();
+img.onload=function(){var c=document.createElement("canvas");c.width=360;c.height=640;
+var x=c.getContext("2d"),s=Math.max(360/img.width,640/img.height),w=img.width*s,h=img.height*s;
+x.drawImage(img,(360-w)/2,(640-h)/2,w,h);
+pth=c.toDataURL("image/jpeg",0.7);
+$("pb_tb").innerHTML='<img src="'+pth+'">';};
+img.src=r.result;};
+r.readAsDataURL(f);
+};
+async function doPub(){
+var btn=$("pb_go"),m=$("pb_m");m.className="amsg";m.textContent="";
+var t=$("pb_t").value.trim();
+if(!t){m.textContent="Oyuna bir başlık yaz.";return;}
+btn.disabled=true;m.textContent="Yayınlanıyor...";
+try{
+var s=(await getSb().auth.getSession()).data.session;
+if(!s){m.textContent="Oturum bitti. Ana sayfadan tekrar giriş yap.";btn.disabled=false;return;}
+var r=await fetch(API+"/publish",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({project:cur,title:t,descr:$("pb_d").value.trim(),tags:$("pb_g").value,thumb:pth})});
+var j={};try{j=await r.json();}catch(x){}
+if(!r.ok){m.textContent=j.error||"Yayınlanamadı.";btn.disabled=false;return;}
+m.className="amsg ok";m.textContent="Yayınlandı! 🎉";
+btn.textContent="Ana sayfaya dön";btn.disabled=false;btn.onclick=function(){location.href="/";};
+}catch(e){m.textContent="Bağlantı hatası, tekrar dene.";btn.disabled=false;}
+}
+$("pub").onclick=async function(){
+if(!window.supabase){alert("Bağlantı kurulamadı, sayfayı yenile.");return;}
+var s=(await getSb().auth.getSession()).data.session;
+if(!s){alert("Yayınlamak için önce giriş yapmalısın. Ana sayfadan giriş yap.");return;}
+pth=null;$("pb_tb").textContent="Resim yok";$("pb_f").value="";
+$("pb_t").value=cur.name;$("pb_d").value="";$("pb_g").value="";$("pb_gp").textContent="";
+pbCount("pb_t","pb_tc",40);pbCount("pb_d","pb_dc",120);
+$("pb_m").className="amsg";$("pb_m").textContent="";
+var b=$("pb_go");b.disabled=false;b.textContent="Yayınla";b.onclick=doPub;
+$("pb").style.display="flex";
+};
 $("mode").onclick=function(){mode=mode=="edit"?"play":"edit";if(mode=="play"&&document.activeElement)document.activeElement.blur();modeBtn();stage();};
 function modeBtn(){$("mode").textContent=mode=="edit"?"▶ Oyna":"✎ Düzenle";$("ed").classList.toggle("lock",mode=="play");}
 function openP(i){
