@@ -154,7 +154,7 @@ var j={};try{j=await r.json();}catch(x){}
 if(!r.ok){m.textContent=j.error||"Yayınlanamadı.";btn.disabled=false;return;}
 m.className="amsg ok";m.textContent="Yayınlandı! 🎉";
 btn.textContent="Ana sayfaya dön";btn.disabled=false;btn.onclick=function(){location.href="/";};
-}catch(e){m.textContent="Bağlantı hatası, tekrar dene.";btn.disabled=false;}
+}catch(e){m.textContent="Bağlantı hatası: "+(e&&e.message?e.message:e);btn.disabled=false;}
 }
 $("pub").onclick=async function(){
 if(!window.supabase){alert("Bağlantı kurulamadı, sayfayı yenile.");return;}
