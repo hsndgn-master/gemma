@@ -30,6 +30,8 @@ body.side #meta{display:flex;position:fixed;z-index:4;align-items:flex-end;gap:1
 body.side .card .info,body.side .card .like{display:none}
 .panel{position:fixed;top:0;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:80px 30px 30px;font-size:20px;background:#0d0d12;z-index:5}
 body.side .panel{left:180px;bottom:0}
+#profile{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:50px}
+#profile>*{flex-shrink:0}
 #create{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:50px}
 #create>*{flex-shrink:0}
 .av{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:800}
@@ -118,6 +120,8 @@ var me=null;
 var likedSet={};
 var likeCounts={};
 var follows={};
+var API="https://gemma-api.hasanalid120.workers.dev";
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
 
 var isPhone=/iPhone|iPod|Android.+Mobile/i.test(navigator.userAgent);
 if(!isPhone){document.body.classList.add("side");}
@@ -149,7 +153,7 @@ layout();
 window.addEventListener("resize",layout);
 window.addEventListener("orientationchange",layout);
 
-var games=[
+var demoGames=[
 {id:"balon",title:"Balon Patlat",creator:"gemma",desc:"Balonlar kaçmadan hepsini patlat!",tags:"#refleks #kolay",
 css:`body{background:#1e3a8a}#s{position:absolute;top:110px;left:50%;transform:translateX(-50%);font-size:52px;z-index:5}.b{position:absolute;bottom:-70px;width:64px;height:64px;border-radius:50%;animation:up 3.5s linear forwards}@keyframes up{to{bottom:105%}}`,
 body:`<div id="s">0</div>`,
@@ -176,6 +180,10 @@ n++;c.textContent=n;
 };`}
 ];
 
+var games=demoGames.slice();
+function engineDoc(p){
+return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;background:#000;user-select:none;-webkit-user-select:none;touch-action:manipulation}#g{position:absolute;top:0;left:0;right:0;bottom:0}</style></head><body><div id="g"></div><scr'+'ipt src="'+location.origin+'/engine.js"></scr'+'ipt><scr'+'ipt>GemmaEngine.run(document.getElementById("g"),'+JSON.stringify(p).replace(/</g,"\\u003c")+');</scr'+'ipt></body></html>';
+}
 function gameDoc(g){
 return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;font-family:sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:manipulation}'+g.css+'</style></head><body>'+g.body+'<scr'+'ipt>'+g.js+'</scr'+'ipt></body></html>';
 }
@@ -260,9 +268,9 @@ await sb.from("likes").insert({user_id:me.id,game_id:g.id});
 function renderMeta(g){
 if(isPhone){return;}
 var m=document.getElementById("meta");
-m.innerHTML='<button class="like" data-game="'+g.id+'">♥<br><small>0</small></button>'+
-'<div class="minfo"><div class="who"><button class="name">@'+g.creator+'</button><button class="follow" data-who="'+g.creator+'">Takip et</button></div>'+
-'<div class="title">'+g.title+'</div><div class="desc">'+g.desc+'</div><div class="tags">'+g.tags+'</div></div>';
+m.innerHTML='<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>'+
+'<div class="minfo"><div class="who"><button class="name">@'+esc(g.creator)+'</button><button class="follow" data-who="'+esc(g.creator)+'">Takip et</button></div>'+
+'<div class="title">'+esc(g.title)+'</div><div class="desc">'+esc(g.desc)+'</div><div class="tags">'+esc(g.tags)+'</div></div>';
 m.querySelector(".name").onclick=function(){openProfile(g.creator);};
 bindFollow(m.querySelector(".follow"));
 var lk=m.querySelector(".like");
@@ -275,26 +283,67 @@ var feed=document.getElementById("feed");
 var profile=document.getElementById("profile");
 var create=document.getElementById("create");
 
-games.forEach(function(g){
+var feedObs=[];
+function playCard(g,frame){
+if(!g.file_key){frame.srcdoc=gameDoc(g);return;}
+if(g.project){frame.srcdoc=engineDoc(g.project);return;}
+fetch(API+"/files/"+g.file_key).then(function(r){return r.json();}).then(function(p){
+g.project=p;
+if(frame.isConnected&&frame.parentNode._on)frame.srcdoc=engineDoc(p);
+}).catch(function(){});
+}
+function addCard(g){
 var card=document.createElement("div");
 card.className="card";
+if(g.thumb_key){card.style.backgroundImage="url("+API+"/files/"+g.thumb_key+")";card.style.backgroundSize="cover";card.style.backgroundPosition="center";}
 card.innerHTML='<iframe sandbox="allow-scripts"></iframe>'+
-'<div class="info"><div class="who"><button class="name">@'+g.creator+'</button><button class="follow" data-who="'+g.creator+'">Takip et</button></div>'+
-'<div class="title">'+g.title+'</div><div class="desc">'+g.desc+'</div><div class="tags">'+g.tags+'</div></div>'+
-'<button class="like" data-game="'+g.id+'">♥<br><small>0</small></button>';
+'<div class="info"><div class="who"><button class="name">@'+esc(g.creator)+'</button><button class="follow" data-who="'+esc(g.creator)+'">Takip et</button></div>'+
+'<div class="title">'+esc(g.title)+'</div><div class="desc">'+esc(g.desc)+'</div><div class="tags">'+esc(g.tags)+'</div></div>'+
+'<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>';
 feed.appendChild(card);
 var frame=card.querySelector("iframe"),like=card.querySelector(".like");
 card.querySelector(".name").onclick=function(){openProfile(g.creator);};
 bindFollow(card.querySelector(".follow"));
 like.onclick=function(){doLike(g,like);};
-new IntersectionObserver(function(list){
+var obs=new IntersectionObserver(function(list){
 list.forEach(function(e){
-if(e.isIntersecting){frame.srcdoc=gameDoc(g);renderMeta(g);}
-else{frame.srcdoc="";}
+if(e.isIntersecting){card._on=true;playCard(g,frame);renderMeta(g);}
+else{card._on=false;frame.srcdoc="";}
 });
-},{root:feed,threshold:0.6}).observe(card);
-});
+},{root:feed,threshold:0.6});
+obs.observe(card);
+feedObs.push(obs);
+}
+function buildFeed(){
+feedObs.forEach(function(o){o.disconnect();});
+feedObs=[];
+feed.innerHTML="";
+games.forEach(addCard);
 renderMeta(games[0]);
+refreshLikes();
+refreshFollow();
+}
+buildFeed();
+async function loadGames(){
+var r=await sb.from("games").select("id,creator,title,descr,tags,file_key,thumb_key").order("created_at",{ascending:false}).limit(50);
+if(r.error||!r.data)return;
+var list=r.data.map(function(x){return {id:x.id,creator:x.creator,title:x.title,desc:x.descr,tags:x.tags,file_key:x.file_key,thumb_key:x.thumb_key};});
+games=list.concat(demoGames);
+buildFeed();
+}
+async function delGame(id,btn){
+if(!confirm("Bu oyun silinsin mi?"))return;
+btn.disabled=true;
+try{
+var s=(await sb.auth.getSession()).data.session;
+if(!s){btn.disabled=false;return;}
+var r=await fetch(API+"/games/"+encodeURIComponent(id),{method:"DELETE",headers:{Authorization:"Bearer "+s.access_token}});
+if(!r.ok){alert("Silinemedi.");btn.disabled=false;return;}
+games=games.filter(function(g){return g.id!=id;});
+buildFeed();
+openProfile("sen");
+}catch(e){alert("Bağlantı hatası.");btn.disabled=false;}
+}
 
 function setNav(v){
 document.querySelectorAll("#nav button").forEach(function(x){
@@ -354,10 +403,13 @@ if(me&&name==me.username){name="sen";}
 var h="";
 if(name=="sen"){
 var nl=Object.keys(likedSet).length,nf=Object.keys(follows).length;
-h='<div class="av">'+me.username.charAt(0).toUpperCase()+'</div><div class="pname">@'+me.username+'</div>'+
+var own=games.filter(function(g){return g.file_key&&g.creator==me.username;});
+h='<div class="av">'+esc(me.username.charAt(0).toUpperCase())+'</div><div class="pname">@'+esc(me.username)+'</div>'+
 '<div class="pstat">'+nl+' beğeni · '+nf+' takip</div>'+
+own.map(function(g){return '<div class="chip">'+esc(g.title)+' <button class="alink" data-del="'+esc(g.id)+'">Sil</button></div>';}).join("")+
 '<button class="alink" id="a_out">Çıkış yap</button>';
 profile.innerHTML=h;
+profile.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){delGame(b.dataset.del,b);};});
 document.getElementById("a_out").onclick=async function(){
 await sb.auth.signOut();
 me=null;likedSet={};follows={};
@@ -367,9 +419,9 @@ renderAuth();
 };
 }else{
 var mine=games.filter(function(g){return g.creator==name;});
-h='<div class="av">'+name.charAt(0).toUpperCase()+'</div><div class="pname">@'+name+'</div>'+
-'<button class="follow" data-who="'+name+'">Takip et</button><div class="pstat">'+mine.length+' oyun</div>'+
-mine.map(function(g){return '<div class="chip">'+g.title+'</div>';}).join("");
+h='<div class="av">'+esc(name.charAt(0).toUpperCase())+'</div><div class="pname">@'+esc(name)+'</div>'+
+'<button class="follow" data-who="'+esc(name)+'">Takip et</button><div class="pstat">'+mine.length+' oyun</div>'+
+mine.map(function(g){return '<div class="chip">'+esc(g.title)+'</div>';}).join("");
 profile.innerHTML=h;
 bindFollow(profile.querySelector(".follow"));
 refreshFollow();
@@ -461,7 +513,9 @@ refreshLikes();
 refreshFollow();
 }
 (async function(){
-try{await loadUser();await loadSocial();}catch(e){}
+try{await loadUser();}catch(e){}
+try{await loadGames();}catch(e){}
+try{await loadSocial();}catch(e){}
 })();
 document.querySelector("#nav .plus").onclick=function(){
 if(!me){openProfile("sen");return;}
