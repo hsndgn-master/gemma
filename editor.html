@@ -156,11 +156,13 @@ var h="";
 if(tab=="obj"){
 h+=rw("İsim",'<input type="text" data-g="name" maxlength="30" value="'+esc(cur.name)+'">')+rw("Arka plan",'<input type="color" data-g="bg" value="'+cur.bg+'">');
 h+='<button class="btn big" data-draw="new">✏️ Yeni karakter çiz</button>';
+h+='<button class="btn big g" data-addtext="1">🔤 Yazı ekle</button>';
 h+='<p class="hint">Hazır emoji (hızlı ekle):</p><div class="emo">'+EM.map(function(e){return '<button data-a="'+e+'">'+e+'</button>';}).join("")+'</div>';
 h+='<p class="hint">Sahnedeki nesneler (sahnede sürükleyerek de taşıyabilirsin):</p><div class="emo">'+cur.objects.map(function(o){return '<button class="'+(o.id==sel?"on":"")+'" data-s="'+o.id+'">'+(isSp(o)?'<img src="'+cur.sprites[o.sp]+'" style="width:30px;height:30px;display:block">':o.e)+'</button>';}).join("")+'</div>';
 var o=fo(sel);
 if(o){
 h+='<div class="rule">'+[["x","Sol-sağ (0-100)"],["y","Yukarı-aşağı (0-100)"],["s","Boyut"],["r","Dönüş (derece)"]].map(function(f){return rw(f[1],'<input type="number" data-f="'+f[0]+'" value="'+o[f[0]]+'">');}).join("")+rw("Sürüklensin",'<input type="checkbox" data-f="drag"'+(o.drag?" checked":"")+'>')+rw("Başta gizli",'<input type="checkbox" data-f="hide"'+(o.hide?" checked":"")+'>');
+if(o.tx!=null)h+=rw("Yazı",'<input type="text" data-f="tx" maxlength="40" value="'+esc(o.tx)+'">')+rw("Yazı rengi",'<input type="color" data-f="c" value="'+(o.c||"#ffffff")+'">');
 if(isSp(o))h+='<button class="btn g" data-draw="edit" style="margin-right:8px">✏️ Çizimi düzenle</button>';
 h+='<button class="btn g" data-del="1">Nesneyi sil</button></div>';
 }
@@ -173,7 +175,8 @@ document.querySelectorAll(".tab").forEach(function(b){b.onclick=function(){tab=b
 $("panel").onclick=function(e){
 var d=e.target.closest("button");if(!d)return;var x=d.dataset;
 if(x.draw){openSp(x.draw=="edit"&&fo(sel)?fo(sel).sp:null);return;}
-if(x.a){var o={id:cur.nid++,e:x.a,x:50,y:50,s:20,r:0,drag:false};cur.objects.push(o);sel=o.id;}
+if(x.addtext){var o={id:cur.nid++,tx:"Yazı",c:"#ffffff",e:"🔤",x:50,y:50,s:8,r:0,drag:false};cur.objects.push(o);sel=o.id;}
+else if(x.a){var o={id:cur.nid++,e:x.a,x:50,y:50,s:20,r:0,drag:false};cur.objects.push(o);sel=o.id;}
 else if(x.s){sel=+x.s;}
 else if(x.del){cur.objects=cur.objects.filter(function(o){return o.id!=sel;});sel=cur.objects.length?cur.objects[0].id:null;}
 else if(x.nr){var f=cur.objects[0]?cur.objects[0].id:0;cur.rules.push({when:{t:"tap",o:f},if:{t:"none",op:">",n:0},do:[{t:"score",o:f,v:1,v2:0}]});}
@@ -185,7 +188,7 @@ sv();stage();panel();
 };
 $("panel").onchange=function(e){
 var t=e.target,x=t.dataset,r;
-if(x.f){var o=fo(sel);o[x.f]=t.type=="checkbox"?t.checked:+t.value;}
+if(x.f){var o=fo(sel);o[x.f]=t.type=="checkbox"?t.checked:(x.f=="tx"||x.f=="c")?t.value:+t.value;}
 else if(x.g){cur[x.g]=t.value;$("pn").textContent=cur.name;}
 else if(x.p){
 r=cur.rules[+x.r];
