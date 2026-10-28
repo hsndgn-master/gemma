@@ -2,18 +2,20 @@
 <html lang="tr"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Gemma Editör</title>
-<style>
+<style>:root{color-scheme:dark;--bg:#0d0d12;--fg:#fff;--panel:#0d0d12;--soft:#1a1a22;--field:#1f1f29;--line:#2a2a33;--bd:#33333f;--bd2:#44444f;--mut:#888;--card:#16161d;--inv:#fff;--invfg:#000;--accent:#a78bfa;--err:#fca5a5;--ok:#86efac;--navon:#17171d;--c1:#2c2c36}
+:root[data-theme="light"]{color-scheme:light;--bg:#f2f2f7;--fg:#14141a;--panel:#f2f2f7;--soft:#e3e3ec;--field:#e8e8f0;--line:#d6d6e0;--bd:#c8c8d4;--bd2:#b8b8c6;--mut:#6b6b78;--card:#dcdce6;--inv:#14141a;--invfg:#fff;--accent:#7c3aed;--err:#dc2626;--ok:#15803d;--navon:#e3e3ec;--c1:#d8d8e2}
+
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#0d0d12;color:#fff;font-family:-apple-system,sans-serif}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,sans-serif}
 button,select,input{font:inherit}
-.bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #2a2a33}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
 .bar b{flex:1;font-size:18px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.btn{background:#fff;color:#000;border:0;border-radius:10px;padding:9px 14px;font-weight:700}
-.btn.g{background:#1f1f29;color:#fff}
+.btn{background:var(--inv);color:var(--invfg);border:0;border-radius:10px;padding:9px 14px;font-weight:700}
+.btn.g{background:var(--field);color:var(--fg)}
 .btn.sm{padding:6px 10px;font-size:13px}
 .btn.big{width:100%;padding:14px;font-size:17px;margin-top:12px}
 .in{padding:16px;max-width:560px;margin:0 auto}
-.card{display:flex;align-items:center;gap:10px;background:#1a1a22;border-radius:14px;padding:14px;margin-top:10px}
+.card{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:14px;padding:14px;margin-top:10px}
 .card span{flex:1;font-weight:600;padding:6px 0}
 #ed{height:100%;display:none;flex-direction:column}
 .main{flex:1;display:flex;min-height:0}
@@ -21,49 +23,55 @@ button,select,input{font:inherit}
 #stage{position:relative;overflow:hidden;border-radius:14px;height:min(72vh,680px);aspect-ratio:9/16}
 .side{flex:1;overflow-y:auto;padding:10px 14px 40px;min-width:0}
 .tabs{display:flex;gap:8px;margin-bottom:10px}
-.tab{flex:1;background:#1f1f29;border:0;color:#aaa;border-radius:10px;padding:10px}
-.tab.on{background:#fff;color:#000;font-weight:700}
+.tab{flex:1;background:var(--field);border:0;color:var(--mut);border-radius:10px;padding:10px}
+.tab.on{background:var(--inv);color:var(--invfg);font-weight:700}
 .row{display:flex;gap:8px;align-items:center;margin:6px 0}
 .row label{width:110px;font-size:14px;opacity:.8;flex-shrink:0}
-.row input[type=number],.row input[type=text],.row select{flex:1;min-width:0;background:#1f1f29;border:1px solid #33333f;border-radius:10px;color:#fff;padding:10px}
+.row input[type=number],.row input[type=text],.row select{flex:1;min-width:0;background:var(--field);border:1px solid var(--bd);border-radius:10px;color:var(--fg);padding:10px}
 .row input[type=color]{width:60px;height:40px;border:0;background:none}
 .emo{display:flex;flex-wrap:wrap;gap:6px}
-.emo button{background:#1f1f29;border:2px solid transparent;border-radius:10px;font-size:26px;padding:6px 10px}
-.emo button.on{border-color:#fff}
-.rule{background:#1a1a22;border-radius:14px;padding:12px;margin:10px 0}
+.emo button{background:var(--field);border:2px solid transparent;border-radius:10px;font-size:26px;padding:6px 10px}
+.emo button.on{border-color:var(--fg)}
+.rule{background:var(--soft);border-radius:14px;padding:12px;margin:10px 0}
 .rt{font-weight:700;margin-bottom:6px}
-.act{border-top:1px solid #2a2a33;padding-top:8px;margin-top:8px}
+.act{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
 .hint{font-size:13px;opacity:.6;margin:12px 0 6px}
 .lock .side,.lock #pub,.lock #back{pointer-events:none;opacity:.35}
-#sp{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d12;z-index:50;display:none;flex-direction:column}
+#sp{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:50;display:none;flex-direction:column}
 .sbody{flex:1;display:flex;gap:14px;padding:12px;min-height:0;overflow:auto;flex-wrap:wrap;justify-content:center;align-content:flex-start}
-#cv{width:min(80vw,58vh,440px);height:min(80vw,58vh,440px);border-radius:12px;touch-action:none;background-color:#1f1f29;background-image:conic-gradient(#2c2c36 25%,#1f1f29 0 50%,#2c2c36 0 75%,#1f1f29 0);background-size:20px 20px}
+#cv{width:min(80vw,58vh,440px);height:min(80vw,58vh,440px);border-radius:12px;touch-action:none;background-color:var(--field);background-image:conic-gradient(var(--c1) 25%,var(--field) 0 50%,var(--c1) 0 75%,var(--field) 0);background-size:20px 20px}
 .tools{flex:1 1 260px;max-width:420px}
 .tb{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.tb button{background:#1f1f29;border:2px solid transparent;color:#fff;border-radius:10px;padding:9px 11px;font-size:15px}
-.tb button.on{border-color:#fff}
+.tb button{background:var(--field);border:2px solid transparent;color:var(--fg);border-radius:10px;padding:9px 11px;font-size:15px}
+.tb button.on{border-color:var(--fg)}
 .pal{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
-.pal button{width:34px;height:34px;border-radius:50%;border:2px solid #44444f}
+.pal button{width:34px;height:34px;border-radius:50%;border:2px solid var(--bd2)}
 @media(max-width:700px){.main{flex-direction:column}.pv{padding:6px}#stage{height:38vh}}
-#pb{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d12;z-index:60;display:none;flex-direction:column}
+#pb{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:60;display:none;flex-direction:column}
 .pbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 16px 60px}
 .pbody>div{max-width:420px;margin:0 auto}
 .pf{margin-top:14px}
 .pf label{display:block;font-size:14px;font-weight:600;margin-bottom:6px;opacity:.85}
-.pf input,.pf textarea{width:100%;background:#1f1f29;border:1px solid #33333f;border-radius:12px;color:#fff;padding:12px;font-size:16px;outline:none;font-family:inherit}
+.pf input,.pf textarea{width:100%;background:var(--field);border:1px solid var(--bd);border-radius:12px;color:var(--fg);padding:12px;font-size:16px;outline:none;font-family:inherit}
 .pf textarea{resize:none;height:80px}
 .pc{font-size:12px;opacity:.55;text-align:right;margin-top:4px}
-.ptp{font-size:14px;color:#a78bfa;margin-top:6px;min-height:18px}
+.ptp{font-size:14px;color:var(--accent);margin-top:6px;min-height:18px}
 .pth{display:flex;align-items:center;gap:14px}
-.pthb{width:72px;height:128px;border-radius:10px;background:#1f1f29;border:1px dashed #44444f;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;text-align:center;flex-shrink:0}
+.pthb{width:72px;height:128px;border-radius:10px;background:var(--field);border:1px dashed var(--bd2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;text-align:center;flex-shrink:0}
 .pthb img{width:100%;height:100%;object-fit:cover}
-.pick{background:#1f1f29;border:1px solid #33333f;border-radius:12px;padding:12px 16px;font-size:15px;font-weight:600;display:inline-block}
-.amsg{min-height:20px;font-size:15px;color:#fca5a5;margin-top:12px}
-.amsg.ok{color:#86efac}
+.pick{background:var(--field);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;font-size:15px;font-weight:600;display:inline-block}
+.amsg{min-height:20px;font-size:15px;color:var(--err);margin-top:12px}
+.amsg.ok{color:var(--ok)}
+
+.emo button{color:var(--fg)}
+.tb2{width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tb2 svg{width:20px;height:20px}
+body{transition:background-color .25s,color .25s}
 </style>
+<script src="/theme.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
-<div id="list"><div class="bar"><button class="btn g" id="home">←</button><b>Projelerim</b><button class="btn" id="new">+ Yeni proje</button></div><div class="in" id="pl"></div></div>
-<div id="ed"><div class="bar"><button class="btn g" id="back">←</button><b id="pn"></b><span id="cl" style="font-size:12px;opacity:.6;white-space:nowrap"></span><button class="btn g" id="mode"></button><button class="btn" id="pub">Yayınla</button></div>
+<div id="list"><div class="bar"><button class="btn g" id="home">←</button><b>Projelerim</b><button class="btn g tb2" data-theme-btn></button><button class="btn" id="new">+ Yeni proje</button></div><div class="in" id="pl"></div></div>
+<div id="ed"><div class="bar"><button class="btn g" id="back">←</button><b id="pn"></b><span id="cl" style="font-size:12px;opacity:.6;white-space:nowrap"></span><button class="btn g tb2" data-theme-btn></button><button class="btn g" id="mode"></button><button class="btn" id="pub">Yayınla</button></div>
 <div class="main"><div class="pv"><div id="stage"></div></div>
 <div class="side"><div class="tabs"><button class="tab" data-tab="obj">Nesneler</button><button class="tab" data-tab="rul">Kurallar</button></div><div id="panel"></div></div></div></div>
 <div id="sp">
