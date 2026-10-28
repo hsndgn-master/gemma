@@ -94,6 +94,10 @@ body.side #nav button.plus .ic{background:var(--inv);color:var(--invfg)}
 .abtn{background:var(--inv);color:var(--invfg)}
 .pickbtn{color:var(--fg)}
 .amsg{word-break:break-word}
+.pbio{font-size:15px;opacity:.85;max-width:340px;white-space:pre-wrap;word-break:break-word}
+.gchip{display:flex;align-items:center;gap:10px;width:100%;max-width:340px;cursor:pointer}
+.gchip .gt{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gchip .gl{opacity:.75;font-size:14px;white-space:nowrap}
 .info{color:#fff;right:84px;background:rgba(0,0,0,.32);border-radius:18px;padding:12px 14px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 body.side #meta .minfo{background:var(--soft);border-radius:20px;padding:16px 18px}
 body.side #meta .like{margin-bottom:0;color:var(--fg)}
@@ -488,11 +492,12 @@ inp.value="";
 var img=new Image();
 img.onerror=function(){msg.textContent="Resim okunamadı.";};
 img.onload=async function(){
-var c=document.createElement("canvas");c.width=c.height=256;
-var x=c.getContext("2d"),sc=Math.max(256/img.width,256/img.height),w=img.width*sc,h=img.height*sc;
-x.fillStyle="#fff";x.fillRect(0,0,256,256);x.drawImage(img,(256-w)/2,(256-h)/2,w,h);
+var c=document.createElement("canvas");c.width=c.height=128;
+var x=c.getContext("2d"),sc=Math.max(128/img.width,128/img.height),w=img.width*sc,h=img.height*sc;
+x.fillStyle="#fff";x.fillRect(0,0,128,128);x.drawImage(img,(128-w)/2,(128-h)/2,w,h);
 var q=0.85,data=c.toDataURL("image/jpeg",q);
-while(data.length>130000&&q>0.3){q-=0.15;data=c.toDataURL("image/jpeg",q);}
+while(data.length>40000&&q>0.2){q-=0.1;data=c.toDataURL("image/jpeg",q);}
+if(data.length>40000){msg.textContent="Fotoğraf çok büyük, daha sade bir resim seç (en fazla 30 KB).";return;}
 try{
 var ss=(await sb.auth.getSession()).data.session;
 if(!ss){msg.textContent="Oturum bitti, tekrar giriş yap.";return;}
@@ -508,6 +513,31 @@ img.src=r.result;
 r.readAsDataURL(f);
 };
 }
+function gchip(g,own){
+return '<div class="chip gchip" data-go="'+esc(g.id)+'"><span class="gt">'+esc(g.title)+'</span><span class="gl">♥ '+(likeCounts[g.id]||0)+'</span>'+(own?'<button class="alink" data-del="'+esc(g.id)+'">Sil</button>':'')+'</div>';
+}
+function goGame(id){
+var i=games.findIndex(function(g){return g.id==id;});if(i<0)return;
+showView("feed");
+feed.scrollTop=i*feed.clientHeight;
+}
+function bindGo(){profile.querySelectorAll("[data-go]").forEach(function(c){c.onclick=function(){goGame(c.dataset.go);};});}
+var BIO_HTML='<div class="field"><label>Hakkında</label><textarea id="bio_in" maxlength="150" placeholder="Kendinden kısaca bahset" style="height:84px"></textarea><div class="count" id="bio_c">0/150</div></div><button class="abtn" id="bio_sv">Kaydet</button><div class="amsg" id="bio_m"></div>';
+function bindBio(){
+var t=document.getElementById("bio_in");if(!t)return;
+var c=document.getElementById("bio_c"),m=document.getElementById("bio_m"),b=document.getElementById("bio_sv");
+t.value=me.bio||"";c.textContent=t.value.length+"/150";
+t.oninput=function(){c.textContent=t.value.length+"/150";};
+b.onclick=async function(){
+var v=t.value.trim().slice(0,150);m.className="amsg";m.textContent="";b.disabled=true;
+try{
+var r=await sb.from("profiles").update({bio:v||null}).eq("id",me.id).select("bio");
+if(r.error||!r.data||!r.data.length){m.textContent="Kaydedilemedi."+(r.error?" "+r.error.message:" (UPDATE izni eksik olabilir)");}
+else{me.bio=v;m.className="amsg ok";m.textContent="Kaydedildi.";}
+}catch(e){m.textContent="Bağlantı hatası.";}
+b.disabled=false;
+};
+}
 function openProfile(name){
 if(name=="sen"&&!me){renderAuth();showView("profile");return;}
 if(me&&name==me.username){name="sen";}
@@ -518,10 +548,11 @@ var own=games.filter(function(g){return g.file_key&&g.creator==me.username;});
 h=THB()+avHtml(me.username,me.avatar_key,"av_me")+'<div class="pname">@'+esc(me.username)+'</div>'+
 '<div class="pstat">'+nl+' beğeni · '+nf+' takip</div>'+
 '<button class="alink" id="av_ch">Profil fotoğrafını değiştir</button><input id="av_in" type="file" accept="image/*" style="display:none"><div class="amsg" id="av_msg"></div>'+
-own.map(function(g){return '<div class="chip">'+esc(g.title)+' <button class="alink" data-del="'+esc(g.id)+'">Sil</button></div>';}).join("")+
+BIO_HTML+own.map(function(g){return gchip(g,true);}).join("")+
 '<button class="alink" id="a_out">Çıkış yap</button>';
 profile.innerHTML=h;
-profile.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){delGame(b.dataset.del,b);};});
+profile.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(ev){ev.stopPropagation();delGame(b.dataset.del,b);};});
+bindGo();bindBio();
 bindAvatar();
 document.getElementById("a_out").onclick=async function(){
 await sb.auth.signOut();
@@ -533,13 +564,15 @@ renderAuth();
 }else{
 var mine=games.filter(function(g){return g.creator==name;});
 h=THB()+'<div class="av" id="av_o">'+esc(name.charAt(0).toUpperCase())+'</div><div class="pname">@'+esc(name)+'</div>'+
-'<button class="follow" data-who="'+esc(name)+'">Takip et</button><div class="pstat">'+mine.length+' oyun</div>'+
-mine.map(function(g){return '<div class="chip">'+esc(g.title)+'</div>';}).join("");
+'<button class="follow" data-who="'+esc(name)+'">Takip et</button><div class="pbio" id="bio_o"></div><div class="pstat">'+mine.length+' oyun</div>'+
+mine.map(function(g){return gchip(g,false);}).join("");
 profile.innerHTML=h;
 bindFollow(profile.querySelector(".follow"));
+bindGo();
 refreshFollow();
-sb.from("profiles").select("avatar_key").eq("username",name).maybeSingle().then(function(r){
-var k=r.data&&r.data.avatar_key,el=document.getElementById("av_o");
+sb.from("profiles").select("avatar_key,bio").eq("username",name).maybeSingle().then(function(r){
+var k=r.data&&r.data.avatar_key,el=document.getElementById("av_o"),bo=document.getElementById("bio_o");
+if(bo&&r.data&&r.data.bio&&profile.contains(bo))bo.textContent=r.data.bio;
 if(k&&el&&/^avatars\/[a-z0-9-]+\.jpg$/.test(k)&&profile.contains(el)){el.style.background="url("+API+"/files/"+k+") center/cover";el.textContent="";}
 });
 }
@@ -610,9 +643,10 @@ async function loadUser(){
 var r=await sb.auth.getSession();
 var s=r.data.session;
 if(s){
-var p=await sb.from("profiles").select("username,avatar_key").eq("id",s.user.id).single();
+var p=await sb.from("profiles").select("username,avatar_key,bio").eq("id",s.user.id).single();
+if(p.error)p=await sb.from("profiles").select("username,avatar_key").eq("id",s.user.id).single();
 if(p.error)p=await sb.from("profiles").select("username").eq("id",s.user.id).single();
-me={id:s.user.id,username:p.data?p.data.username:"kullanici",avatar_key:p.data?p.data.avatar_key:null};
+me={id:s.user.id,username:p.data?p.data.username:"kullanici",avatar_key:p.data?p.data.avatar_key:null,bio:p.data&&p.data.bio?p.data.bio:""};
 }else{me=null;}
 }
 async function loadSocial(){
