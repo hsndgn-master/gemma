@@ -66,6 +66,7 @@ button,select,input{font:inherit}
 .emo button{color:var(--fg)}
 .tb2{width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .tb2 svg{width:20px;height:20px}
+summary{cursor:pointer;font-size:15px}
 body{transition:background-color .25s,color .25s}
 </style>
 <script src="/theme.js"></script>
@@ -73,7 +74,7 @@ body{transition:background-color .25s,color .25s}
 <div id="list"><div class="bar"><button class="btn g" id="home">←</button><b>Projelerim</b><button class="btn g tb2" data-theme-btn></button><button class="btn" id="new">+ Yeni proje</button></div><div class="in" id="pl"></div></div>
 <div id="ed"><div class="bar"><button class="btn g" id="back">←</button><b id="pn"></b><span id="cl" style="font-size:12px;opacity:.6;white-space:nowrap"></span><button class="btn g tb2" data-theme-btn></button><button class="btn g" id="mode"></button><button class="btn" id="pub">Yayınla</button></div>
 <div class="main"><div class="pv"><div id="stage"></div></div>
-<div class="side"><div class="tabs"><button class="tab" data-tab="obj">Nesneler</button><button class="tab" data-tab="rul">Kurallar</button></div><div id="panel"></div></div></div></div>
+<div class="side"><div class="tabs"><button class="tab" data-tab="obj">Nesneler</button><button class="tab" data-tab="rul">Kurallar</button><button class="tab" data-tab="var">Değişkenler</button></div><div id="panel"></div></div></div></div>
 <div id="sp">
 <div class="bar"><button class="btn g" id="sp_x">İptal</button><b>Çizim</b><button class="btn" id="sp_ok">Kaydet</button></div>
 <div class="sbody">
@@ -99,11 +100,18 @@ body{transition:background-color .25s,color .25s}
 <script>
 var K="gemma_projects",P=[],cur=null,sel=null,mode="edit",tab="obj",ctrl=null;
 var EM=["😀","🐱","🐶","⭐","🍎","🚀","👾","💎","🎈","🌙","🔥","🦊","🪨","🏆","🎯","❤️"];
-var WH=[["start","Oyun başlayınca"],["tapany","Ekrana dokunulunca"],["tap","Nesneye dokunulunca"],["touch","Nesne başka nesneye değince"],["edge","Nesne kenara değince"],["always","Sürekli (her an)"],["every","Her … saniyede"],["after","… saniye sonra (bir kez)"]];
-var CD=[["none","Her zaman"],["score","Skor"],["life","Can"]];
-var OP=[[">","büyükse"],["<","küçükse"],["=","eşitse"]];
-var DO=[["move","Taşı"],["forward","İleri git (dönüş yönünde)"],["goto","Şu konuma git"],["gotap","Dokunulan yere git"],["jump","Rastgele yere git"],["rotate","Döndür"],["grow","Büyüt / küçült (%)"],["hide","Gizle"],["show","Göster"],["score","Skor ekle"],["life","Can ekle (eksi = azalt)"],["win","Oyunu kazan"],["lose","Oyunu kaybet"]];
-var OBJ=["move","forward","goto","gotap","jump","rotate","grow","hide","show"];
+var WH=[["start","Oyun başlayınca"],["tapany","Ekrana dokunulunca"],["tap","Nesneye dokunulunca"],["touch","Nesne başka nesneye değince"],["edge","Nesne kenara değince"],["always","Sürekli (her an)"],["every","Her … saniyede"],["after","… saniye sonra (bir kez)"],["cond","Şart doğru olunca"],["event","Olay gelince"]];
+var CD=[["none","Her zaman"],["expr","Şart var"]];
+var OP=[[">","büyükse"],["<","küçükse"],["=","eşitse"],["!=","eşit değilse"],[">=","büyük/eşitse"],["<=","küçük/eşitse"]];
+var DO=[["move","Taşı"],["forward","İleri git (dönüş yönünde)"],["goto","Şu konuma git"],["gotap","Dokunulan yere git"],["jump","Rastgele yere git"],["goobj","Nesnenin yerine git"],["towards","Nesneye doğru ilerle"],["setp","Nesnenin özelliğini ayarla"],["vel","Hızı ayarla"],["rotate","Döndür"],["grow","Büyüt / küçült (%)"],["hide","Gizle"],["show","Göster"],["score","Skor ekle"],["life","Can ekle (eksi = azalt)"],["set","Değişkene ata (=)"],["add","Değişkene ekle (+=)"],["bg","Arka plan rengi"],["bghue","Arka plan renk tonu (0-360)"],["emit","Olay gönder"],["beep","Ses çal"],["restart","Oyunu baştan başlat"],["win","Oyunu kazan"],["lose","Oyunu kaybet"]];
+var OBJ=["move","forward","goto","gotap","jump","rotate","grow","hide","show","setp","towards","goobj","vel"];
+var TXT={t:1,op:1,name:1,p:1,c:1},EXP={v:1,v2:1,sec:1,n:1,a:1};
+var PR=[["x","Sol-sağ (x)"],["y","Yukarı-aşağı (y)"],["s","Boyut"],["r","Dönüş"]];
+var EDG=[["none","Sınırda kalsın"],["stop","Dur"],["bounce","Sek"],["wrap","Öbür taraftan çıksın"]];
+var RES=["skor","can","zaman","dokunX","dokunY","pi","score","life"];
+function pv(k,v){if(TXT[k])return v.trim();if(EXP[k]){v=v.trim();return v!==""&&!isNaN(+v)?+v:v;}return +v;}
+function cleanName(v,d){v=String(v).trim().replace(/[^\p{L}\p{N}_]/gu,"_").replace(/^(\d)/,"_$1").slice(0,20)||d;return RES.indexOf(v)>-1?v+"_":v;}
+function uniq(n,list,key,self){var b=n,k=2;while(list.some(function(x){return x!==self&&x[key]==n;}))n=b+k++;return n;}
 try{P=JSON.parse(localStorage.getItem(K))||[];}catch(e){P=[];}
 function $(i){return document.getElementById(i);}
 function sv(){
@@ -126,7 +134,7 @@ if(x.o!=null)openP(+x.o);
 else if(x.d!=null){if(confirm("Bu proje silinsin mi?")){var did=P[+x.d].id;P.splice(+x.d,1);cur=null;sv();cloudDel(did);showList();}}
 };
 $("new").onclick=function(){
-P.unshift({id:Date.now().toString(36),name:"Yeni proje",bg:"#1e3a8a",nid:2,nsp:1,sprites:{},objects:[{id:1,e:"⭐",x:50,y:50,s:20,r:0,drag:false}],rules:[{when:{t:"tap",o:1},if:{t:"none",op:">",n:0},do:[{t:"jump",o:1,v:1,v2:0}]}]});
+P.unshift({id:Date.now().toString(36),name:"Yeni proje",bg:"#1e3a8a",nid:2,nsp:1,sprites:{},vars:[],objects:[{id:1,e:"⭐",x:50,y:50,s:20,r:0,drag:false}],rules:[{when:{t:"tap",o:1},if:{t:"none",op:">",n:0},do:[{t:"jump",o:1,v:1,v2:0}]}]});
 cur=P[0];sv();openP(0);
 };
 $("home").onclick=function(){location.href="/";};
@@ -180,13 +188,14 @@ $("pb").style.display="flex";
 $("mode").onclick=function(){mode=mode=="edit"?"play":"edit";if(mode=="play"&&document.activeElement)document.activeElement.blur();modeBtn();stage();};
 function modeBtn(){$("mode").textContent=mode=="edit"?"▶ Oyna":"✎ Düzenle";$("ed").classList.toggle("lock",mode=="play");}
 function openP(i){
-cur=P[i];cur.sprites=cur.sprites||{};cur.nsp=cur.nsp||1;
+cur=P[i];cur.sprites=cur.sprites||{};cur.vars=cur.vars||[];cur.nsp=cur.nsp||1;
 cur.rules.forEach(fix);
 sel=cur.objects.length?cur.objects[0].id:null;mode="edit";tab="obj";
 $("list").style.display="none";$("ed").style.display="flex";
 $("pn").textContent=cur.name;modeBtn();stage();panel();
 }
 function stage(){
+cur.objects.forEach(function(o){if(!o.nm)o.nm="nesne"+o.id;});
 stop();var box=$("stage");
 if(mode=="play")ctrl=GemmaEngine.run(box,cur);
 else ctrl=GemmaEngine.run(box,cur,{edit:1,sel:sel,
@@ -195,42 +204,63 @@ onedit:function(id,t){var o=fo(id);if(!o)return;o.tx=t;sv();panel();},
 onmove:function(id,x,y){var o=fo(id);if(!o)return;o.x=Math.round(x);o.y=Math.round(y);sv();panel();}});
 }
 function sl(a,v,at){return '<select '+at+'>'+a.map(function(x){return '<option value="'+x[0]+'"'+(x[0]==v?" selected":"")+'>'+x[1]+'</option>';}).join("")+'</select>';}
-function ob(v,at){return sl(cur.objects.map(function(o){return [o.id,(isSp(o)?"🖼️":o.tx!=null?o.tx.slice(0,8):o.e)+" "+o.id];}),v,at);}
-function nm(v,at){return '<input type="number" value="'+v+'" '+at+'>';}
+function ob(v,at){return sl(cur.objects.map(function(o){return [o.id,(isSp(o)?"🖼️":o.tx!=null?o.tx.slice(0,8):o.e)+" "+(o.nm||o.id)];}),v,at);}
+function nm(v,at){return '<input type="text" autocapitalize="none" autocorrect="off" value="'+esc(v)+'" '+at+' placeholder="sayı veya hesap">';}
 function rw(l,c){return '<div class="row"><label>'+l+'</label>'+c+'</div>';}
 function fix(r){
-var f=cur.objects[0]?cur.objects[0].id:0;
+var f=cur.objects[0]?cur.objects[0].id:0,f2=cur.objects[1]?cur.objects[1].id:f;
 r.when=r.when||{t:"start"};var w=r.when;
-if(!fo(w.o))w.o=f;
-if(!fo(w.o2))w.o2=cur.objects[1]?cur.objects[1].id:f;
-if(w.sec==null)w.sec=1;
-r.if=r.if||{t:"none",op:">",n:0};
+if(!fo(w.o))w.o=f;if(!fo(w.o2))w.o2=f2;
+if(w.sec==null)w.sec=1;if(w.name==null)w.name="olay1";if(w.a==null)w.a="";if(w.op==null)w.op=">";if(w.n==null)w.n=0;
+r.if=r.if||{t:"none"};var c=r.if;
+if(c.t=="score"||c.t=="life"){c.a=c.t=="score"?"skor":"can";c.t="expr";}
+if(c.op==null)c.op=">";if(c.n==null)c.n=0;if(c.a==null)c.a="";
 if(!Array.isArray(r.do))r.do=r.do?[r.do]:[];
-r.do.forEach(function(a){if(!fo(a.o))a.o=f;if(a.v==null)a.v=1;if(a.v2==null)a.v2=0;});
+r.do.forEach(function(a){if(!fo(a.o))a.o=f;if(!fo(a.tg))a.tg=f2;if(a.v==null)a.v=1;if(a.v2==null)a.v2=0;if(a.p==null)a.p="x";if(a.name==null)a.name="";if(a.c==null)a.c=cur.bg;
+if(a.name===""&&(a.t=="set"||a.t=="add")&&cur.vars[0])a.name=cur.vars[0].n;});
 }
+function vsel(v,at){var a=cur.vars.map(function(x){return [x.n,x.n];});if(!a.length)return '<span style="font-size:13px;opacity:.7">Önce "Değişkenler" sekmesinden değişken ekle</span>';return sl(a,v,at);}
 function actH(d,i,j){
-var a='data-r="'+i+'" data-ai="'+j+'" data-p=';
-var h='<div class="act">'+rw("Eylem",sl(DO,d.t,a+'"t"'));
-if(OBJ.indexOf(d.t)>-1)h+=rw("Hangisi",ob(d.o,a+'"o"'));
-if(d.t=="move")h+=rw("Sağa(+) Sola(−)",nm(d.v,a+'"v"'))+rw("Aşağı(+) Yukarı(−)",nm(d.v2,a+'"v2"'));
-else if(d.t=="goto")h+=rw("Sol-sağ (0-100)",nm(d.v,a+'"v"'))+rw("Yukarı-aşağı",nm(d.v2,a+'"v2"'));
-else if(d.t=="forward")h+=rw("Adım",nm(d.v,a+'"v"'));
-else if(d.t=="rotate")h+=rw("Derece",nm(d.v,a+'"v"'));
-else if(d.t=="grow")h+=rw("Yüzde",nm(d.v,a+'"v"'));
-else if(d.t=="score"||d.t=="life")h+=rw("Sayı",nm(d.v,a+'"v"'));
+var a='data-r="'+i+'" data-ai="'+j+'" data-p=',t=d.t;
+var h='<div class="act">'+rw("Eylem",sl(DO,t,a+'"t"'));
+if(OBJ.indexOf(t)>-1)h+=rw("Hangisi",ob(d.o,a+'"o"'));
+if(t=="move")h+=rw("Sağa(+) Sola(−)",nm(d.v,a+'"v"'))+rw("Aşağı(+) Yukarı(−)",nm(d.v2,a+'"v2"'));
+else if(t=="goto")h+=rw("Sol-sağ (0-100)",nm(d.v,a+'"v"'))+rw("Yukarı-aşağı",nm(d.v2,a+'"v2"'));
+else if(t=="vel")h+=rw("Yatay hız",nm(d.v,a+'"v"'))+rw("Dikey hız",nm(d.v2,a+'"v2"'));
+else if(t=="setp")h+=rw("Özellik",sl(PR,d.p,a+'"p"'))+rw("Yeni değer",nm(d.v,a+'"v"'));
+else if(t=="towards")h+=rw("Hedef",ob(d.tg,a+'"tg"'))+rw("Adım",nm(d.v,a+'"v"'));
+else if(t=="goobj")h+=rw("Hedef",ob(d.tg,a+'"tg"'));
+else if(t=="forward")h+=rw("Adım",nm(d.v,a+'"v"'));
+else if(t=="rotate")h+=rw("Derece",nm(d.v,a+'"v"'));
+else if(t=="grow")h+=rw("Yüzde",nm(d.v,a+'"v"'));
+else if(t=="score"||t=="life")h+=rw("Sayı",nm(d.v,a+'"v"'));
+else if(t=="set"||t=="add")h+=rw("Değişken",vsel(d.name,a+'"name"'))+rw("Değer",nm(d.v,a+'"v"'));
+else if(t=="bg")h+=rw("Renk",'<input type="color" value="'+(d.c||"#1e3a8a")+'" '+a+'"c">');
+else if(t=="bghue")h+=rw("Ton (0-360)",nm(d.v,a+'"v"'));
+else if(t=="emit")h+=rw("Olay adı",'<input type="text" value="'+esc(d.name)+'" '+a+'"name">')+rw("Kaç sn sonra",nm(d.v,a+'"v"'));
+else if(t=="beep")h+=rw("Tiz-pes (Hz)",nm(d.v,a+'"v"'));
 return h+'<button class="btn g sm" data-dar="'+i+'" data-dai="'+j+'">Eylemi sil</button></div>';
 }
+function condRows(c,pre,a){return rw("Sol taraf",nm(c.a,a+'"'+pre+'a"'))+rw("Karşılaştır",sl(OP,c.op,a+'"'+pre+'op"'))+rw("Sağ taraf",nm(c.n,a+'"'+pre+'n"'));}
 function ruleH(r,i){
 fix(r);var w=r.when,c=r.if,a='data-r="'+i+'" data-p=';
 var h='<div class="rule"><div class="rt">Kural '+(i+1)+'</div>'+rw("Ne zaman",sl(WH,w.t,a+'"w.t"'));
 if(w.t=="tap"||w.t=="edge")h+=rw("Hangisi",ob(w.o,a+'"w.o"'));
 if(w.t=="touch")h+=rw("Bu nesne",ob(w.o,a+'"w.o"'))+rw("Buna değince",ob(w.o2,a+'"w.o2"'));
 if(w.t=="every"||w.t=="after")h+=rw("Saniye",nm(w.sec,a+'"w.sec"'));
+if(w.t=="event")h+=rw("Olay adı",'<input type="text" value="'+esc(w.name)+'" '+a+'"w.name">');
+if(w.t=="cond")h+=condRows(w,"w.",a);
 h+=rw("Şart",sl(CD,c.t,a+'"c.t"'));
-if(c.t!="none")h+=rw("Şöyleyse",sl(OP,c.op,a+'"c.op"'))+rw("Sayı",nm(c.n,a+'"c.n"'));
+if(c.t!="none")h+=condRows(c,"c.",a);
 h+='<div class="hint">Ne olsun:</div>';
 r.do.forEach(function(d,j){h+=actH(d,i,j);});
 return h+'<div style="margin-top:10px;display:flex;gap:8px"><button class="btn g" data-na="'+i+'">+ Eylem ekle</button><button class="btn g" data-dr="'+i+'">Kuralı sil</button></div></div>';
+}
+var HELP='<details class="rule"><summary><b>💡 Sayı yerine hesap yazabilirsin</b></summary><div class="hint" style="opacity:.85;line-height:1.6">Sayı beklenen her kutuya hesap yazabilirsin:<br>• <b>puan*2</b>, <b>can+1</b>, <b>(a+b)/2</b> (toplama +, çıkarma -, çarpma *, bölme /)<br>• Başka nesnenin yeri: <b>nesne2.x</b>, <b>nesne2.y</b> (İsim sekmesinden adı değiştirebilirsin)<br>• <b>rastgele(10,90)</b>, <b>yuvarla(x)</b>, <b>mutlak(x)</b>, <b>min(a,b)</b>, <b>max(a,b)</b>, <b>sin(x)</b>, <b>cos(x)</b><br>• Hazır değerler: <b>skor</b>, <b>can</b>, <b>zaman</b>, <b>dokunX</b>, <b>dokunY</b><br>• Yazı nesnesine <b>{puan}</b> yazarsan oyunda değeri görünür.<br>• "Olay gönder" bir kuralın başka kuralı tetiklemesini sağlar.</div></details>';
+function varsH(){
+var h='<p class="hint">Değişken, oyunda sakladığın bir sayıdır (puan, hız, seviye…). Kurallarda adını yazarak kullanırsın.</p>';
+h+=cur.vars.map(function(v,i){var a='data-vi="'+i+'" data-vf=';return '<div class="rule">'+rw("Ad",'<input type="text" '+a+'"n" maxlength="20" value="'+esc(v.n)+'">')+rw("Başlangıç",'<input type="number" '+a+'"v" value="'+v.v+'">')+'<button class="btn g sm" data-dv="'+i+'">Sil</button></div>';}).join("");
+return h+'<button class="btn" data-nv="1">+ Değişken ekle</button>';
 }
 function panel(){
 document.querySelectorAll(".tab").forEach(function(b){b.classList.toggle("on",b.dataset.tab==tab);});
@@ -243,13 +273,13 @@ h+='<p class="hint">Hazır emoji (hızlı ekle):</p><div class="emo">'+EM.map(fu
 h+='<p class="hint">Sahnedeki nesneler (sahnede sürükleyerek de taşıyabilirsin):</p><div class="emo">'+cur.objects.map(function(o){return '<button class="'+(o.id==sel?"on":"")+'" data-s="'+o.id+'">'+(isSp(o)?'<img src="'+cur.sprites[o.sp]+'" style="width:30px;height:30px;display:block">':o.tx!=null?'<span style="font-size:16px;font-weight:800">'+esc(o.tx.slice(0,6))+'</span>':o.e)+'</button>';}).join("")+'</div>';
 var o=fo(sel);
 if(o){
-h+='<div class="rule">'+[["x","Sol-sağ (0-100)"],["y","Yukarı-aşağı (0-100)"],["s","Boyut"],["r","Dönüş (derece)"]].map(function(f){return rw(f[1],'<input type="number" data-f="'+f[0]+'" value="'+o[f[0]]+'">');}).join("")+rw("Sürüklensin",'<input type="checkbox" data-f="drag"'+(o.drag?" checked":"")+'>')+rw("Başta gizli",'<input type="checkbox" data-f="hide"'+(o.hide?" checked":"")+'>');
+h+='<div class="rule">'+[["x","Sol-sağ (0-100)"],["y","Yukarı-aşağı (0-100)"],["s","Boyut"],["r","Dönüş (derece)"]].map(function(f){return rw(f[1],'<input type="number" data-f="'+f[0]+'" value="'+o[f[0]]+'">');}).join("")+rw("Sürüklensin",'<input type="checkbox" data-f="drag"'+(o.drag?" checked":"")+'>')+rw("Başta gizli",'<input type="checkbox" data-f="hide"'+(o.hide?" checked":"")+'>')+rw("İsim",'<input type="text" data-f="nm" maxlength="20" value="'+esc(o.nm||"")+'">')+rw("Yatay hız",'<input type="number" data-f="vx" value="'+(o.vx||0)+'">')+rw("Dikey hız",'<input type="number" data-f="vy" value="'+(o.vy||0)+'">')+rw("Yerçekimi",'<input type="number" data-f="g" value="'+(o.g||0)+'">')+rw("Kenara değince",sl(EDG,o.edge||"none",'data-f="edge"'));
 if(o.tx!=null)h+=rw("Yazı",'<input type="text" data-f="tx" maxlength="40" value="'+esc(o.tx)+'">')+rw("Yazı rengi",'<input type="color" data-f="c" value="'+(o.c||"#ffffff")+'">');
 if(isSp(o))h+='<button class="btn g" data-draw="edit" style="margin-right:8px">✏️ Çizimi düzenle</button>';
 h+='<button class="btn g" data-del="1">Nesneyi sil</button></div>';
 }
-}else{
-h+=cur.rules.map(ruleH).join("")+'<button class="btn" data-nr="1">+ Kural ekle</button>';
+}else if(tab=="var"){h+=varsH();}else{
+h+=HELP+cur.rules.map(ruleH).join("")+'<button class="btn" data-nr="1">+ Kural ekle</button>';
 }
 $("panel").innerHTML=h;
 }
@@ -265,19 +295,28 @@ else if(x.nr){var f=cur.objects[0]?cur.objects[0].id:0;cur.rules.push({when:{t:"
 else if(x.dr){cur.rules.splice(+x.dr,1);}
 else if(x.na){var f2=cur.objects[0]?cur.objects[0].id:0;cur.rules[+x.na].do.push({t:"score",o:f2,v:1,v2:0});}
 else if(x.dar!=null){cur.rules[+x.dar].do.splice(+x.dai,1);}
+else if(x.nv){cur.vars.push({n:uniq("degisken",cur.vars,"n",null),v:0});}
+else if(x.dv!=null){cur.vars.splice(+x.dv,1);}
 else return;
 sv();stage();panel();
 };
 $("panel").onchange=function(e){
-var t=e.target,x=t.dataset,r;
-if(x.f){var o=fo(sel);o[x.f]=t.type=="checkbox"?t.checked:x.f=="tx"?(t.value||"Yazı"):x.f=="c"?t.value:+t.value;}
+var t=e.target,x=t.dataset,r,rp=false;
+if(x.f){var o=fo(sel);
+if(t.type=="checkbox")o[x.f]=t.checked;
+else if(x.f=="tx")o.tx=t.value||"Yazı";
+else if(x.f=="c"||x.f=="edge")o[x.f]=t.value;
+else if(x.f=="nm"){o.nm=uniq(cleanName(t.value,"nesne"+o.id),cur.objects,"nm",o);t.value=o.nm;rp=true;}
+else o[x.f]=+t.value||0;}
 else if(x.g){cur[x.g]=t.value;$("pn").textContent=cur.name;}
+else if(x.vi!=null){var v=cur.vars[+x.vi];if(x.vf=="n"){v.n=uniq(cleanName(t.value,"degisken"),cur.vars,"n",v);t.value=v.n;}else v.v=+t.value||0;}
 else if(x.p){
 r=cur.rules[+x.r];
-if(x.ai!=null){var a=r.do[+x.ai];a[x.p]=x.p=="t"?t.value:+t.value;}
-else{var k=x.p.split("."),g=k[0]=="w"?r.when:r.if;g[k[1]]=(k[1]=="t"||k[1]=="op")?t.value:+t.value;}
+if(x.ai!=null){var a=r.do[+x.ai];a[x.p]=pv(x.p,t.value);
+if(x.p=="t"){var D={beep:440,emit:0,bghue:180,setp:50,towards:1,vel:10,set:0,add:1};if(D[a.t]!=null)a.v=D[a.t];if(a.t=="emit")a.name="olay1";else if((a.t=="set"||a.t=="add")&&!a.name)a.name=cur.vars[0]?cur.vars[0].n:"";}}
+else{var k=x.p.split("."),g=k[0]=="w"?r.when:r.if;g[k[1]]=pv(k[1],t.value);}
 }else return;
-sv();stage();if(x.p&&/(^|\.)t$/.test(x.p))panel();
+sv();stage();if(rp||(x.p&&/(^|\.)t$/.test(x.p)))panel();
 };
 
 /* ---- Bulut taslak senkronu ---- */
