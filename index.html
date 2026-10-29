@@ -174,6 +174,19 @@ body.side #nav button#navRep.show{display:flex!important}
 .rvbar b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rvbox{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 0 16px}
 .rvbox iframe{height:100%;aspect-ratio:9/16;max-width:100%;border:0;border-radius:16px;background:#000}
+#gdlg{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:gdf .18s ease-out}
+#gdlg.gd-out{opacity:0;transition:opacity .14s}
+.gd-card{width:100%;max-width:340px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:26px;padding:26px 22px 20px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.45);animation:gdp .24s cubic-bezier(.2,.9,.3,1.2)}
+.gd-ic{width:58px;height:58px;margin:0 auto 14px;border-radius:50%;background:var(--field);color:var(--accent);display:flex;align-items:center;justify-content:center}
+.gd-ic svg{width:30px;height:30px}
+.gd-msg{font-size:17px;font-weight:600;line-height:1.4;margin-bottom:20px;word-break:break-word}
+.gd-btns{display:flex;gap:10px}
+.gd-b{flex:1;border:0;border-radius:14px;padding:13px 10px;font-size:16px;font-weight:700;font-family:inherit}
+.gd-c{background:var(--field);color:var(--fg)}
+.gd-ok{background:var(--inv);color:var(--invfg)}
+.gd-ok.gd-d{background:#dc2626;color:#fff}
+@keyframes gdf{from{opacity:0}to{opacity:1}}
+@keyframes gdp{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
 </style>
 <script src="/i18n.js?v=5"></script>
 <script src="/theme.js?v=5"></script>
@@ -219,7 +232,7 @@ body.side #nav button#navRep.show{display:flex!important}
 <button class="plus" data-view="create"><span class="ic">+</span><span class="lb">Oluştur</span></button>
 <button data-view="profile" aria-label="Profil"><span class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.2"/><path d="M4 20.5c0-4.1 3.6-6.5 8-6.5s8 2.4 8 6.5z"/></svg></span><span class="lb">Profil</span></button>
 <button id="navAdmin" data-view="admin" aria-label="Admin"><span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="lb">Admin</span></button>
-<button id="navRep" data-view="reported" aria-label="Reported"><span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M12 8v4.2"/><circle cx="12" cy="15.4" r=".6" fill="currentColor"/></svg></span><span class="lb">Reported</span></button>
+<button id="navRep" data-view="reported" aria-label="Reported"><span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-5.5L7 21v-4a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z"/><path d="M12 6.5v4"/><circle cx="12" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg></span><span class="lb">Reported</span></button>
 <button id="themeS" data-theme-btn></button>
 </div>
 <script>
@@ -234,20 +247,42 @@ var API="https://gemma-api.hasanalid120.workers.dev";
 var TERMS_VER="2.0";
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
 function L(tr,en){return window.GL=="en"?en:tr;}
-var REP_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M12 8v4.2"/><circle cx="12" cy="15.4" r=".6" fill="currentColor"/></svg>';
+var REP_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-5.5L7 21v-4a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z"/><path d="M12 6.5v4"/><circle cx="12" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg>';
 function repBtn(){return '<button class="rep" aria-label="'+L("Reportla","Report")+'" title="'+L("Reportla","Report")+'">'+REP_SVG+'</button>';}
+/* Sitenin kendi diyalog kartı (tarayıcı alert/confirm yerine) */
+function gDlg(o){
+return new Promise(function(done){
+var old=document.getElementById("gdlg");if(old)old.remove();
+var w=document.createElement("div");w.id="gdlg";
+w.innerHTML='<div class="gd-card" role="dialog" aria-modal="true"><div class="gd-ic">'+REP_SVG+'</div><div class="gd-msg" data-nt></div><div class="gd-btns">'+(o.cancel?'<button class="gd-b gd-c" data-nt></button>':'')+'<button class="gd-b gd-ok'+(o.danger?' gd-d':'')+'" data-nt></button></div></div>';
+w.querySelector(".gd-msg").textContent=o.msg;
+var ok=w.querySelector(".gd-ok"),cn=w.querySelector(".gd-c");
+ok.textContent=o.ok||L("Tamam","OK");
+if(cn)cn.textContent=o.cancel;
+function close(v){document.removeEventListener("keydown",key,true);w.classList.add("gd-out");setTimeout(function(){w.remove();},140);done(v);}
+function key(e){if(e.key=="Escape"){e.preventDefault();close(false);}}
+ok.onclick=function(){close(true);};
+if(cn)cn.onclick=function(){close(false);};
+w.onclick=function(e){if(e.target===w)close(false);};
+document.addEventListener("keydown",key,true);
+document.body.appendChild(w);
+(cn||ok).focus();
+});
+}
+function gNote(m){return gDlg({msg:m});}
 async function doReport(g){
 if(!me){openProfile("sen");return;}
-if(g.creator==me.username){alert(L("Kendi oyununu reportlayamazsın.","You can't report your own game."));return;}
-if(!confirm(L("Bu projeyi reportlamak istediğinize emin misiniz?","Are you sure you want to report this project?")))return;
+if(g.creator==me.username){await gNote(L("Kendi oyununu reportlayamazsın.","You can't report your own game."));return;}
+var yes=await gDlg({msg:L("Bu projeyi reportlamak istediğinize emin misiniz?","Are you sure you want to report this project?"),ok:L("Evet, reportla","Yes, report"),cancel:L("Vazgeç","Cancel"),danger:true});
+if(!yes)return;
 try{
 var s=(await sb.auth.getSession()).data.session;
 if(!s){openProfile("sen");return;}
 var r=await fetch(API+"/report",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({game_id:g.id})});
-if(r.ok)alert(L("Report gönderildi. Teşekkürler.","Report sent. Thank you."));
-else if(r.status==400)alert(L("Kendi oyununu reportlayamazsın.","You can't report your own game."));
-else alert(L("Report gönderilemedi, tekrar dene.","Could not send the report, try again."));
-}catch(e){alert(L("Bağlantı hatası.","Connection error."));}
+if(r.ok)gNote(L("Report gönderildi. Teşekkürler.","Report sent. Thank you."));
+else if(r.status==400)gNote(L("Kendi oyununu reportlayamazsın.","You can't report your own game."));
+else gNote(L("Report gönderilemedi, tekrar dene.","Could not send the report, try again."));
+}catch(e){gNote(L("Bağlantı hatası.","Connection error."));}
 }
 function legalLinks(){
 return '<div class="lgl"><a href="/privacy.html" target="_blank" rel="noopener">'+L("Gizlilik Politikası","Privacy Policy")+'</a><a href="/terms.html" target="_blank" rel="noopener">'+L("Kullanım Şartları","Terms of Service")+'</a></div>';
@@ -752,7 +787,7 @@ async function viewGame(id,title){
 try{
 var ss=(await sb.auth.getSession()).data.session;if(!ss)return;
 var r=await fetch(API+"/admin/game/"+encodeURIComponent(id),{headers:{Authorization:"Bearer "+ss.access_token}});
-if(!r.ok){alert(L("Oyun açılamadı.","Could not open the game."));return;}
+if(!r.ok){gNote(L("Oyun açılamadı.","Could not open the game."));return;}
 var p=await r.json();
 var o=document.createElement("div");
 o.id="rview";
@@ -760,7 +795,7 @@ o.innerHTML='<div class="rvbar"><b data-nt>'+esc(title)+'</b><button class="asm"
 document.body.appendChild(o);
 o.querySelector("iframe").srcdoc=engineDoc(p);
 o.querySelector("#rv_x").onclick=function(){o.remove();};
-}catch(e){alert(L("Bağlantı hatası.","Connection error."));}
+}catch(e){gNote(L("Bağlantı hatası.","Connection error."));}
 }
 repP.onclick=async function(e){
 var b=e.target.closest("button");if(!b)return;
@@ -770,13 +805,13 @@ if(x.play){viewGame(x.play,x.pt||"");return;}
 var id=x.block||x["false"];
 if(!id)return;
 var blk=!!x.block;
-if(blk&&!confirm(L("Bu oyun engellensin mi? Admin olmayan herkesin erişimine kapanır ve akıştan kaldırılır.","Block this game? It will be closed to everyone except admins and removed from the feed.")))return;
+if(blk&&!(await gDlg({msg:L("Bu oyun engellensin mi? Admin olmayan herkesin erişimine kapanır ve akıştan kaldırılır.","Block this game? It will be closed to everyone except admins and removed from the feed."),ok:"Block",cancel:L("Vazgeç","Cancel"),danger:true})))return;
 b.disabled=true;
 try{
 await admCall("/admin/report-action","POST",{game_id:id,action:blk?"block":"false"});
 if(blk){games=games.filter(function(g){return g.id!=id;});buildFeed();}
 await loadReported();
-}catch(err){b.disabled=false;alert(err.message);}
+}catch(err){b.disabled=false;gNote(window.t(err.message));}
 };
 
 var draft={thumb:null};
