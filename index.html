@@ -124,10 +124,27 @@ body:not(.side) .card .pw{display:none}
 .promo h2{margin:0;font-size:30px;font-weight:900;line-height:1.15;text-shadow:0 2px 8px rgba(0,0,0,.35);z-index:1}
 .promo p{margin:0;font-size:16px;line-height:1.4;max-width:280px;opacity:.92;z-index:1}
 .promo .pbtn{background:#fff;color:#000;border:0;border-radius:14px;padding:14px 26px;font-size:18px;font-weight:800;z-index:1;margin-top:6px}
+#navAdmin{display:none!important}
+body.side #nav button#navAdmin.show{display:flex!important}
+.vb{display:inline-block;width:.95em;height:.95em;vertical-align:-.12em;margin-left:.3em;flex-shrink:0}
+#admin{justify-content:flex-start;align-items:stretch;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:60px;text-align:left}
+#admin>*{flex-shrink:0}
+.aw{width:100%;max-width:760px;margin:0 auto;font-size:16px}
+.aw .pname,.aw .pstat{text-align:left}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.astat{background:var(--soft);border-radius:14px;padding:12px}
+.an{font-size:26px;font-weight:800}.al{font-size:13px;opacity:.7}
+.acard{background:var(--soft);border-radius:16px;padding:14px;margin-top:14px}
+.acard h3{margin:0 0 8px;font-size:16px}
+.arow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}
+.arow2{display:flex;gap:8px;align-items:center}
+.arow2 input{flex:1;min-width:0;max-width:none}
+.asm{background:var(--inv);color:var(--invfg);border:0;border-radius:10px;padding:10px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+.asm.d{background:#dc2626;color:#fff}.asm.g{background:var(--field);color:var(--fg);padding:6px 10px}
 .promo .phint{position:absolute;left:0;right:0;bottom:18px;font-size:13px;opacity:.75;z-index:1}
 </style>
-<script src="/i18n.js"></script>
-<script src="/theme.js"></script>
+<script src="/i18n.js?v=5"></script>
+<script src="/theme.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
@@ -163,10 +180,12 @@ body:not(.side) .card .pw{display:none}
 <div class="amsg" id="c_msg"></div>
 </div>
 <div class="panel" id="profile"></div>
+<div class="panel" id="admin"></div>
 <div id="nav">
 <button class="on" data-view="feed"><span class="ic">⌂</span><span class="lb">Ev</span></button>
 <button class="plus" data-view="create"><span class="ic">+</span><span class="lb">Oluştur</span></button>
 <button data-view="profile" aria-label="Profil"><span class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.2"/><path d="M4 20.5c0-4.1 3.6-6.5 8-6.5s8 2.4 8 6.5z"/></svg></span><span class="lb">Profil</span></button>
+<button id="navAdmin" data-view="admin" aria-label="Admin"><span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="lb">Admin</span></button>
 <button id="themeS" data-theme-btn></button>
 </div>
 <script>
@@ -213,9 +232,11 @@ layout();
 window.addEventListener("resize",layout);
 window.addEventListener("orientationchange",layout);
 
-var games=[],items=[],loaded=false;
+var games=[],items=[],loaded=false,admins={},bannedSet={};
+function vb(n){return admins[n]?'<svg class="vb" viewBox="0 0 24 24"><title>'+window.t("Doğrulanmış admin")+'</title><rect x="3" y="3" width="18" height="18" rx="5" fill="#f5b301"/><rect x="3" y="3" width="18" height="18" rx="5" fill="#f5b301" transform="rotate(45 12 12)"/><path d="M8 12.3l2.7 2.7 5.5-5.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>':"";}
+async function loadFlags(){try{var r=await sb.from("profiles").select("username,role,banned").or("role.not.is.null,banned.eq.true");admins={};bannedSet={};(r.data||[]).forEach(function(x){if(x.banned)bannedSet[x.username]=1;else if(x.role)admins[x.username]=1;});}catch(e){}}
 function engineDoc(p){
-return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:-apple-system,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}#g{position:absolute;top:0;left:0;right:0;bottom:0}</style></head><body><div id="g"></div><scr'+'ipt>window.GL="'+window.GL+'";</scr'+'ipt><scr'+'ipt src="'+location.origin+'/engine.js"></scr'+'ipt><scr'+'ipt>GemmaEngine.run(document.getElementById("g"),'+JSON.stringify(p).replace(/</g,"\\u003c")+');</scr'+'ipt></body></html>';
+return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:-apple-system,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}#g{position:absolute;top:0;left:0;right:0;bottom:0}</style></head><body><div id="g"></div><scr'+'ipt>window.GL="'+window.GL+'";</scr'+'ipt><scr'+'ipt src="'+location.origin+'/engine.js?v=5"></scr'+'ipt><scr'+'ipt>GemmaEngine.run(document.getElementById("g"),'+JSON.stringify(p).replace(/</g,"\\u003c")+');</scr'+'ipt></body></html>';
 }
 
 function burst(x,y,set){
@@ -262,6 +283,7 @@ burst(r.left+r.width/2,r.top+r.height/2,set);
 
 function trErr(m){
 m=(m||"").toLowerCase();
+if(m.indexOf("banned")>-1)return "Bu hesap banlandı.";
 if(m.indexOf("invalid login")>-1)return "E-posta veya şifre yanlış.";
 if(m.indexOf("already")>-1)return "Bu e-posta zaten kayıtlı.";
 if(m.indexOf("database error")>-1)return "Bu kullanıcı adı alınmış olabilir, başka bir tane dene.";
@@ -324,7 +346,7 @@ if(isPhone){return;}
 var m=document.getElementById("meta");
 if(g.promo){m.innerHTML="";return;}
 m.innerHTML='<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>'+
-'<div class="minfo"><div class="who"><button class="name">@'+esc(g.creator)+'</button><button class="follow" data-who="'+esc(g.creator)+'">Takip et</button></div>'+
+'<div class="minfo"><div class="who"><button class="name">@'+esc(g.creator)+vb(g.creator)+'</button><button class="follow" data-who="'+esc(g.creator)+'">Takip et</button></div>'+
 '<div class="title">'+esc(g.title)+'</div><div class="desc">'+esc(g.desc)+'</div><div class="tags">'+esc(g.tags)+'</div></div>';
 m.querySelector(".name").onclick=function(){openProfile(g.creator);};
 bindFollow(m.querySelector(".follow"));
@@ -362,7 +384,7 @@ if(g.promo){addPromo(g);return;}
 var card=document.createElement("div");
 card.className="card";
 card.innerHTML='<iframe sandbox="allow-scripts"></iframe>'+
-'<div class="info"><div class="who"><button class="name">@'+esc(g.creator)+'</button><button class="follow" data-who="'+esc(g.creator)+'">Takip et</button></div>'+
+'<div class="info"><div class="who"><button class="name">@'+esc(g.creator)+vb(g.creator)+'</button><button class="follow" data-who="'+esc(g.creator)+'">Takip et</button></div>'+
 '<div class="title">'+esc(g.title)+'</div><div class="desc">'+esc(g.desc)+'</div><div class="tags">'+esc(g.tags)+'</div></div>'+
 '<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>'+
 (g.file_key?'<div class="pw">powered by <b>gemma engine</b></div>':'');
@@ -412,7 +434,8 @@ var r=await sb.from("games").select("id,creator,title,descr,tags,file_key,thumb_
 loaded=true;
 if(r.error||!r.data){buildFeed();return;}
 var list=r.data.map(function(x){return {id:x.id,creator:x.creator,title:x.title,desc:x.descr,tags:x.tags,file_key:x.file_key,thumb_key:x.thumb_key};});
-games=list;
+await loadFlags();
+games=list.filter(function(g){return !bannedSet[g.creator];});
 buildFeed();
 }
 async function delGame(id,btn){
@@ -438,6 +461,7 @@ function showView(v){
 document.body.classList.toggle("onpanel",v!="feed");
 create.style.display=v=="create"?"flex":"none";
 profile.style.display=v=="profile"?"flex":"none";
+adminP.style.display=v=="admin"?"flex":"none";
 setNav(v);
 }
 
@@ -519,7 +543,7 @@ var h="";
 if(name=="sen"){
 var nl=Object.keys(likedSet).length,nf=Object.keys(follows).length;
 var own=games.filter(function(g){return g.file_key&&g.creator==me.username;});
-h=THB()+avHtml(me.username,me.avatar_key,"av_me")+'<div class="pname" data-nt>@'+esc(me.username)+'</div>'+
+h=THB()+avHtml(me.username,me.avatar_key,"av_me")+'<div class="pname" data-nt>@'+esc(me.username)+vb(me.username)+'</div>'+
 '<div class="pstat">'+nl+' beğeni · '+nf+' takip</div>'+
 BIO_HTML+own.map(function(g){return gchip(g,true);}).join("")+
 '<button class="alink" id="a_out">Çıkış yap</button>';
@@ -528,14 +552,14 @@ profile.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(ev
 bindGo();bindBio();
 document.getElementById("a_out").onclick=async function(){
 await sb.auth.signOut();
-me=null;likedSet={};follows={};
+me=null;likedSet={};follows={};updateAdminNav();
 refreshLikes();refreshFollow();
 authMode="giris";
 renderAuth();
 };
 }else{
 var mine=games.filter(function(g){return g.creator==name;});
-h=THB()+'<div class="av" id="av_o">'+esc(name.charAt(0).toUpperCase())+'</div><div class="pname" data-nt>@'+esc(name)+'</div>'+
+h=THB()+'<div class="av" id="av_o">'+esc(name.charAt(0).toUpperCase())+'</div><div class="pname" data-nt>@'+esc(name)+vb(name)+'</div>'+
 '<button class="follow" data-who="'+esc(name)+'">Takip et</button><div class="pbio" id="bio_o"></div><div class="pstat">'+mine.length+' oyun</div>'+
 mine.map(function(g){return gchip(g,false);}).join("");
 profile.innerHTML=h;
@@ -559,9 +583,83 @@ else if(v=="create"){
 if(!me){openProfile("sen");return;}
 showView("create");
 }
+else if(v=="admin"){if(!me||!me.role)return;showView("admin");loadAdmin();}
 else{showView(v);}
 };
 });
+
+/* ---- Admin paneli ---- */
+var adminP=document.getElementById("admin");
+function $a(i){return document.getElementById(i);}
+function updateAdminNav(){
+var b=$a("navAdmin");if(!b)return;
+var ok=!!(me&&me.role);
+b.classList.toggle("show",ok&&!isPhone);
+if(!ok&&adminP.style.display=="flex")showView("feed");
+}
+async function admCall(path,method,body){
+var ss=(await sb.auth.getSession()).data.session;
+if(!ss)throw new Error("Giriş gerekli.");
+var r=await fetch(API+path,{method:method||"GET",headers:{"Content-Type":"application/json",Authorization:"Bearer "+ss.access_token},body:body?JSON.stringify(body):undefined});
+var j={};try{j=await r.json();}catch(e){}
+if(!r.ok)throw new Error(j.error||"Hata");
+return j;
+}
+function fmtB(b){return b<1048576?Math.round(b/1024)+" KB":(b/1048576).toFixed(1)+" MB";}
+function stat(n,l){return '<div class="astat"><div class="an">'+n+'</div><div class="al">'+l+'</div></div>';}
+function bars(vals,labels){
+var W=300,H=100,mx=Math.max.apply(null,vals.concat([1])),bw=W/vals.length;
+var s='<svg viewBox="0 0 '+W+' '+(H+16)+'" style="width:100%;height:170px">';
+vals.forEach(function(v,i){var h=Math.round(v/mx*(H-14));
+s+='<rect x="'+(i*bw+2)+'" y="'+(H-h)+'" width="'+(bw-4)+'" height="'+h+'" rx="3" fill="var(--accent)"/>';
+if(v)s+='<text x="'+(i*bw+bw/2)+'" y="'+(H-h-3)+'" font-size="9" text-anchor="middle" fill="var(--fg)">'+v+'</text>';});
+s+='<text x="2" y="'+(H+12)+'" font-size="9" fill="var(--mut)">'+labels[0]+'</text><text x="'+(W-2)+'" y="'+(H+12)+'" font-size="9" text-anchor="end" fill="var(--mut)">'+labels[labels.length-1]+'</text></svg>';
+return s;
+}
+function hbars(rows){
+var mx=Math.max.apply(null,rows.map(function(r){return r[1];}).concat([1]));
+return rows.map(function(r){return '<div style="margin:8px 0"><div class="arow" style="border:0;padding:0"><span>'+r[0]+'</span><b>'+fmtB(r[1])+'</b></div><div style="height:8px;border-radius:4px;background:var(--field)"><div style="height:8px;border-radius:4px;background:var(--accent);width:'+Math.max(1,Math.round(r[1]/mx*100))+'%"></div></div></div>';}).join("");
+}
+function lst(a,f){return a.length?a.map(f).join(""):'<div class="al">Henüz veri yok.</div>';}
+function userRow(u,btn){return '<div class="arow"><span data-nt>@'+esc(u)+vb(u)+'</span>'+btn+'</div>';}
+function admHtml(d){
+var U=d.users,G=d.games,S=d.storage,owner=me.role=="owner";
+var h='<div class="aw"><div class="pname">Admin paneli</div><div class="pstat">'+'<span>'+(owner?"Kurucu":"Yardımcı admin")+'</span> · <button class="alink" id="ad_ref">Yenile</button></div>';
+h+='<div class="agrid" style="margin-top:14px">'+stat(U.total,"Kayıtlı kullanıcı")+stat(U.active7,"Aktif kullanıcı (7 gün)")+stat(U.new7,"Yeni kullanıcı (7 gün)")+stat(U.new30,"Yeni kullanıcı (30 gün)")+stat(G.total,"Yayımlanan oyun")+stat(G.new7,"Yeni oyun (7 gün)")+stat(G.new30,"Yeni oyun (30 gün)")+stat(G.creators,"Oyun yapan kullanıcı")+stat(d.likes,"Toplam beğeni")+stat(d.follows,"Toplam takip")+stat(U.total?(G.total/U.total).toFixed(2):"0","Oyun / kullanıcı")+stat(G.total?(d.likes/G.total).toFixed(2):"0","Beğeni / oyun")+stat(U.banned,"Banlı kullanıcı")+stat(U.helpers,"Yardımcı adminler")+stat(fmtB(S.total),"Depolama (R2)")+'</div>';
+var lb=d.series.days.map(function(x){return x.slice(5);});
+h+='<div class="acard"><h3>Yeni kullanıcılar (son 14 gün)</h3>'+bars(d.series.signups,lb)+'</div>';
+h+='<div class="acard"><h3>Yeni oyunlar (son 14 gün)</h3>'+bars(d.series.games,lb)+'</div>';
+h+='<div class="acard"><h3>Depolama dağılımı</h3>'+hbars([["Oyunlar",S.games],["Taslaklar",S.drafts],["Profil fotoğrafları",S.avatars],["Kapak resimleri",S.thumbs],["Diğer",S.other]])+'</div>';
+h+='<div class="acard"><h3>En çok beğenilen oyunlar</h3>'+lst(d.topGames,function(x){return '<div class="arow"><span data-nt>'+esc(x.t)+' · @'+esc(x.u)+'</span><b>♥ '+x.c+'</b></div>';})+'</div>';
+h+='<div class="acard"><h3>En çok oyun yapanlar</h3>'+lst(d.topCreators,function(x){return '<div class="arow"><span data-nt>@'+esc(x.n)+vb(x.n)+'</span><b>'+x.c+' oyun</b></div>';})+'</div>';
+h+='<div class="acard"><h3>Popüler hashtag\'ler</h3>'+lst(d.tags,function(x){return '<div class="arow"><span data-nt>'+esc(x.t)+'</span><b>'+x.c+'</b></div>';})+'</div>';
+h+='<div class="acard"><h3>Kullanıcı banla</h3><div class="arow2"><input id="ad_bu" maxlength="20" placeholder="Kullanıcı adı" autocapitalize="none" autocorrect="off"><button class="asm d" id="ad_ban">Banla</button></div><div class="amsg" id="ad_bm"></div><h3 style="margin-top:14px">Banlı kullanıcılar</h3>'+lst(d.banned,function(u){return userRow(u,'<button class="asm g" data-unban="'+esc(u)+'">Banı kaldır</button>');})+'</div>';
+if(owner)h+='<div class="acard"><h3>Yardımcı admin ata</h3><div class="arow2"><input id="ad_hu" maxlength="20" placeholder="Kullanıcı adı" autocapitalize="none" autocorrect="off"><button class="asm" id="ad_hel">Yardımcı admin yap</button></div><div class="amsg" id="ad_hm"></div><h3 style="margin-top:14px">Yardımcı adminler</h3>'+lst(d.helpers,function(u){return userRow(u,'<button class="asm g" data-unhelp="'+esc(u)+'">Yetkiyi al</button>');})+'</div>';
+return h+'</div>';
+}
+async function loadAdmin(keep){
+adminP.innerHTML=THB()+'<div class="aw"><div class="pname">Admin paneli</div><div class="pstat">Yükleniyor...</div></div>';
+var d;
+try{d=await admCall("/admin/stats");}
+catch(e){adminP.innerHTML=THB()+'<div class="aw"><div class="pname">Admin paneli</div><div class="amsg">'+esc(e.message)+'</div></div>';return;}
+adminP.innerHTML=THB()+admHtml(d);
+if(keep){var m=$a(keep.id);if(m){m.className=keep.cls;m.textContent=keep.text;}}
+}
+async function admAct(path,body,mid,okTxt,u){
+var m=$a(mid);if(m){m.className="amsg";m.textContent="";}
+try{await admCall(path,"POST",body);await loadAdmin({id:mid,cls:"amsg ok",text:window.t(okTxt)+" @"+u});}
+catch(e){if(m){m.className="amsg";m.textContent=e.message;}}
+}
+function admUser(id){return ($a(id).value||"").trim().replace(/^@+/,"").toLowerCase();}
+adminP.onclick=function(e){
+var b=e.target.closest("button");if(!b)return;
+if(b.id=="ad_ref"){loadAdmin();return;}
+var u;
+if(b.id=="ad_ban"){u=admUser("ad_bu");if(!u){$a("ad_bm").textContent=window.t("Kullanıcı adını yaz.");return;}if(!confirm(window.t("Bu kullanıcı banlansın mı?")+" @"+u))return;admAct("/admin/ban",{username:u,ban:true},"ad_bm","Banlandı:",u);}
+else if(b.dataset.unban){u=b.dataset.unban;admAct("/admin/ban",{username:u,ban:false},"ad_bm","Banı kaldırıldı:",u);}
+else if(b.id=="ad_hel"){u=admUser("ad_hu");if(!u){$a("ad_hm").textContent=window.t("Kullanıcı adını yaz.");return;}admAct("/admin/helper",{username:u,on:true},"ad_hm","Yardımcı admin yapıldı:",u);}
+else if(b.dataset.unhelp){u=b.dataset.unhelp;admAct("/admin/helper",{username:u,on:false},"ad_hm","Yetki alındı:",u);}
+};
 
 var draft={thumb:null};
 function parseTags(v){
@@ -594,11 +692,14 @@ async function loadUser(){
 var r=await sb.auth.getSession();
 var s=r.data.session;
 if(s){
-var p=await sb.from("profiles").select("username,avatar_key,bio").eq("id",s.user.id).single();
+var p=await sb.from("profiles").select("username,avatar_key,bio,role,banned").eq("id",s.user.id).single();
+if(p.error)p=await sb.from("profiles").select("username,avatar_key,bio").eq("id",s.user.id).single();
 if(p.error)p=await sb.from("profiles").select("username,avatar_key").eq("id",s.user.id).single();
 if(p.error)p=await sb.from("profiles").select("username").eq("id",s.user.id).single();
-me={id:s.user.id,username:p.data?p.data.username:"kullanici",avatar_key:p.data?p.data.avatar_key:null,bio:p.data&&p.data.bio?p.data.bio:""};
+me={id:s.user.id,username:p.data?p.data.username:"kullanici",avatar_key:p.data?p.data.avatar_key:null,bio:p.data&&p.data.bio?p.data.bio:"",role:(p.data&&p.data.role)||null};
+if(p.data&&p.data.banned){await sb.auth.signOut();me=null;alert("Bu hesap banlandı.");}
 }else{me=null;}
+updateAdminNav();
 }
 async function loadSocial(){
 var l=await sb.from("likes").select("user_id,game_id");
