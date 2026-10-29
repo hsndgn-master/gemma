@@ -118,6 +118,13 @@ body:not(.side) #logo{font-size:20px;top:calc(env(safe-area-inset-top) + 6px)}
 body:not(.side) #themeM{top:calc(env(safe-area-inset-top) + 34px);width:28px;height:28px}
 body:not(.side) #themeM svg{width:16px;height:16px}
 body:not(.side) .card .pw{display:none}
+.card.promo{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:30px;background:linear-gradient(160deg,#4c1d95,#be185d);color:#fff}
+.promo i{position:absolute;font-style:normal;font-size:40px;opacity:.85;animation:pbob 3s ease-in-out infinite}
+@keyframes pbob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-16px) rotate(6deg)}}
+.promo h2{margin:0;font-size:30px;font-weight:900;line-height:1.15;text-shadow:0 2px 8px rgba(0,0,0,.35);z-index:1}
+.promo p{margin:0;font-size:16px;line-height:1.4;max-width:280px;opacity:.92;z-index:1}
+.promo .pbtn{background:#fff;color:#000;border:0;border-radius:14px;padding:14px 26px;font-size:18px;font-weight:800;z-index:1;margin-top:6px}
+.promo .phint{position:absolute;left:0;right:0;bottom:18px;font-size:13px;opacity:.75;z-index:1}
 </style>
 <script src="/i18n.js"></script>
 <script src="/theme.js"></script>
@@ -206,43 +213,9 @@ layout();
 window.addEventListener("resize",layout);
 window.addEventListener("orientationchange",layout);
 
-var demoGames=[
-{id:"balon",title:"Balon Patlat",creator:"gemma",desc:"Balonlar kaçmadan hepsini patlat!",tags:"#refleks #kolay",
-css:`body{background:#1e3a8a}#s{position:absolute;top:110px;left:50%;transform:translateX(-50%);font-size:52px;z-index:5}.b{position:absolute;bottom:-70px;width:64px;height:64px;border-radius:50%;animation:up 3.5s linear forwards}@keyframes up{to{bottom:105%}}`,
-body:`<div id="s">0</div>`,
-js:`var s=0,sc=document.getElementById("s");
-function spawn(){var b=document.createElement("div");b.className="b";b.style.left=(Math.random()*80+5)+"%";b.style.background="hsl("+Math.random()*360+",80%,60%)";b.onclick=function(){s++;sc.textContent=s;b.remove();};document.body.appendChild(b);setTimeout(function(){b.remove();},3500);}
-setInterval(spawn,700);`},
-{id:"refleks",title:"Refleks Testi",creator:"ayse_oyun",desc:"Ekran yeşile dönünce olabildiğince hızlı dokun.",tags:"#refleks #hız",
-css:`body{display:flex;align-items:center;justify-content:center;background:#1e3a8a;text-align:center;font-size:30px;padding:20px}`,
-body:`<div id="t">Başlamak için dokun</div>`,
-js:`var t=document.getElementById("t"),state=0,start=0,timer;
-document.body.onclick=function(){
-if(state==0){state=1;t.textContent="Bekle...";document.body.style.background="#7f1d1d";timer=setTimeout(function(){state=2;start=Date.now();document.body.style.background="#15803d";t.textContent="ŞİMDİ DOKUN!";},1000+Math.random()*3000);}
-else if(state==1){clearTimeout(timer);state=0;document.body.style.background="#1e3a8a";t.textContent="Çok erken! Tekrar dokun";}
-else{state=0;document.body.style.background="#1e3a8a";t.textContent=(Date.now()-start)+" ms. Tekrar dokun";}
-};`},
-{id:"dokunma",title:"10 Saniye Dokunma",creator:"mertcan",desc:"10 saniyede kaç kez dokunabilirsin?",tags:"#hız #rekor",
-css:`body{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#4c1d95;text-align:center;padding:20px}#c{font-size:90px}#m{font-size:22px}`,
-body:`<div id="c">0</div><div id="m">Başlamak için dokun</div>`,
-js:`var n=0,on=false,done=false,c=document.getElementById("c"),m=document.getElementById("m");
-document.body.onclick=function(){
-if(done){n=0;done=false;c.textContent=0;m.textContent="Başlamak için dokun";return;}
-if(!on){on=true;m.textContent="10 saniyen var!";setTimeout(function(){on=false;done=true;m.textContent="Süre bitti! "+n+" dokunuş. Tekrar için dokun";},10000);}
-n++;c.textContent=n;
-};`}
-];
-
-if(window.GL=="en"){
-var DJ=[["Başlamak için dokun","Tap to start"],["Bekle...","Wait..."],["ŞİMDİ DOKUN!","TAP NOW!"],["Çok erken! Tekrar dokun","Too early! Tap again"],[" ms. Tekrar dokun"," ms. Tap again"],["10 saniyen var!","You have 10 seconds!"],["Süre bitti! ","Time's up! "],[" dokunuş. Tekrar için dokun"," taps. Tap to retry"]];
-demoGames.forEach(function(g){g.title=window.t(g.title);g.desc=window.t(g.desc);g.tags=g.tags.split(" ").map(window.t).join(" ");DJ.forEach(function(p){g.body=g.body.split(p[0]).join(p[1]);g.js=g.js.split(p[0]).join(p[1]);});});
-}
-var games=demoGames.slice();
+var games=[],items=[],loaded=false;
 function engineDoc(p){
 return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:-apple-system,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}#g{position:absolute;top:0;left:0;right:0;bottom:0}</style></head><body><div id="g"></div><scr'+'ipt>window.GL="'+window.GL+'";</scr'+'ipt><scr'+'ipt src="'+location.origin+'/engine.js"></scr'+'ipt><scr'+'ipt>GemmaEngine.run(document.getElementById("g"),'+JSON.stringify(p).replace(/</g,"\\u003c")+');</scr'+'ipt></body></html>';
-}
-function gameDoc(g){
-return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;font-family:sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:manipulation}'+g.css+'</style></head><body>'+g.body+'<scr'+'ipt>'+g.js+'</scr'+'ipt></body></html>';
 }
 
 function burst(x,y,set){
@@ -349,6 +322,7 @@ function renderMeta(g){
 var pw=document.getElementById("pw");if(pw)pw.style.visibility=g.file_key?"visible":"hidden";
 if(isPhone){return;}
 var m=document.getElementById("meta");
+if(g.promo){m.innerHTML="";return;}
 m.innerHTML='<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>'+
 '<div class="minfo"><div class="who"><button class="name">@'+esc(g.creator)+'</button><button class="follow" data-who="'+esc(g.creator)+'">Takip et</button></div>'+
 '<div class="title">'+esc(g.title)+'</div><div class="desc">'+esc(g.desc)+'</div><div class="tags">'+esc(g.tags)+'</div></div>';
@@ -366,14 +340,25 @@ var create=document.getElementById("create");
 
 var feedObs=[];
 function playCard(g,frame){
-if(!g.file_key){frame.srcdoc=gameDoc(g);return;}
+if(!g.file_key)return;
 if(g.project){frame.srcdoc=engineDoc(g.project);return;}
 fetch(API+"/files/"+g.file_key).then(function(r){return r.json();}).then(function(p){
 g.project=p;
 if(frame.isConnected&&frame.parentNode._on)frame.srcdoc=engineDoc(p);
 }).catch(function(){});
 }
+function goCreate(){if(!me){openProfile("sen");return;}location.href="/editor.html";}
+function addPromo(g){
+var card=document.createElement("div");
+card.className="card promo";
+card.innerHTML='<i style="left:12%;top:16%;animation-delay:0s">🎮</i><i style="right:12%;top:24%;animation-delay:.7s">⭐</i><i style="left:16%;bottom:22%;animation-delay:1.3s">🚀</i><i style="right:14%;bottom:30%;animation-delay:.4s">👾</i><h2>Haydi sen de oluştur!</h2><p>Kendi oyununu yap, yayınla, herkes oynasın.</p><button class="pbtn">Oluşturmaya başla!</button>'+(g.end?'<div class="phint">Başa dönmek için tekrar aşağı kaydır</div>':"");
+feed.appendChild(card);
+card.querySelector(".pbtn").onclick=goCreate;
+var obs=new IntersectionObserver(function(list){list.forEach(function(e){if(e.isIntersecting)renderMeta(g);});},{root:feed,threshold:0.6});
+obs.observe(card);feedObs.push(obs);
+}
 function addCard(g){
+if(g.promo){addPromo(g);return;}
 var card=document.createElement("div");
 card.className="card";
 card.innerHTML='<iframe sandbox="allow-scripts"></iframe>'+
@@ -395,21 +380,39 @@ else{card._on=false;frame.srcdoc="";}
 obs.observe(card);
 feedObs.push(obs);
 }
+function mkItems(){
+if(!loaded)return [];
+var a=[],c=0,rnd=function(){return 4+Math.floor(Math.random()*3);},nx=rnd();
+games.forEach(function(g,i){a.push(g);c++;if(c>=nx&&i<games.length-1){a.push({id:"promo"+i,promo:true});c=0;nx=rnd();}});
+a.push({id:"promo-end",promo:true,end:true});
+return a;
+}
 function buildFeed(){
 feedObs.forEach(function(o){o.disconnect();});
 feedObs=[];
 feed.innerHTML="";
-games.forEach(addCard);
-renderMeta(games[0]);
+items=mkItems();
+items.forEach(addCard);
+if(items[0])renderMeta(items[0]);
 refreshLikes();
 refreshFollow();
+setTimeout(function(){endAt=(items.length&&atEnd())?Date.now()-1000:0;},60);
 }
+/* feed sonunda bir kez daha kaydırınca başa dön */
+var endAt=0,tY=0,tEnd=false;
+function atEnd(){return feed.scrollTop+feed.clientHeight>=feed.scrollHeight-4;}
+function toTop(){endAt=0;feed.scrollTop=0;}
+feed.addEventListener("scroll",function(){if(atEnd()){if(!endAt)endAt=Date.now();}else endAt=0;},{passive:true});
+feed.addEventListener("wheel",function(e){if(e.deltaY>10&&atEnd()&&endAt&&Date.now()-endAt>500)toTop();},{passive:true});
+feed.addEventListener("touchstart",function(e){tY=e.touches[0].clientY;tEnd=atEnd()&&endAt&&Date.now()-endAt>400;},{passive:true});
+feed.addEventListener("touchend",function(e){if(tEnd&&e.changedTouches[0].clientY-tY<-40&&atEnd())toTop();tEnd=false;},{passive:true});
 buildFeed();
 async function loadGames(){
 var r=await sb.from("games").select("id,creator,title,descr,tags,file_key,thumb_key").order("created_at",{ascending:false}).limit(50);
-if(r.error||!r.data)return;
+loaded=true;
+if(r.error||!r.data){buildFeed();return;}
 var list=r.data.map(function(x){return {id:x.id,creator:x.creator,title:x.title,desc:x.descr,tags:x.tags,file_key:x.file_key,thumb_key:x.thumb_key};});
-games=list.concat(demoGames);
+games=list;
 buildFeed();
 }
 async function delGame(id,btn){
@@ -488,7 +491,7 @@ function gchip(g,own){
 return '<div class="chip gchip" data-go="'+esc(g.id)+'"><span class="gt">'+esc(g.title)+'</span><span class="gl">♥ '+(likeCounts[g.id]||0)+'</span>'+(own?'<button class="alink" data-del="'+esc(g.id)+'">Sil</button>':'')+'</div>';
 }
 function goGame(id){
-var i=games.findIndex(function(g){return g.id==id;});if(i<0)return;
+var i=items.findIndex(function(g){return g.id==id;});if(i<0)return;
 showView("feed");
 feed.scrollTop=i*feed.clientHeight;
 }
