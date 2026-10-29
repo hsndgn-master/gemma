@@ -119,6 +119,7 @@ body:not(.side) #themeM{top:calc(env(safe-area-inset-top) + 34px);width:28px;hei
 body:not(.side) #themeM svg{width:16px;height:16px}
 body:not(.side) .card .pw{display:none}
 </style>
+<script src="/i18n.js"></script>
 <script src="/theme.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
@@ -232,9 +233,13 @@ n++;c.textContent=n;
 };`}
 ];
 
+if(window.GL=="en"){
+var DJ=[["Başlamak için dokun","Tap to start"],["Bekle...","Wait..."],["ŞİMDİ DOKUN!","TAP NOW!"],["Çok erken! Tekrar dokun","Too early! Tap again"],[" ms. Tekrar dokun"," ms. Tap again"],["10 saniyen var!","You have 10 seconds!"],["Süre bitti! ","Time's up! "],[" dokunuş. Tekrar için dokun"," taps. Tap to retry"]];
+demoGames.forEach(function(g){g.title=window.t(g.title);g.desc=window.t(g.desc);g.tags=g.tags.split(" ").map(window.t).join(" ");DJ.forEach(function(p){g.body=g.body.split(p[0]).join(p[1]);g.js=g.js.split(p[0]).join(p[1]);});});
+}
 var games=demoGames.slice();
 function engineDoc(p){
-return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:-apple-system,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}#g{position:absolute;top:0;left:0;right:0;bottom:0}</style></head><body><div id="g"></div><scr'+'ipt src="'+location.origin+'/engine.js"></scr'+'ipt><scr'+'ipt>GemmaEngine.run(document.getElementById("g"),'+JSON.stringify(p).replace(/</g,"\\u003c")+');</scr'+'ipt></body></html>';
+return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:-apple-system,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}#g{position:absolute;top:0;left:0;right:0;bottom:0}</style></head><body><div id="g"></div><scr'+'ipt>window.GL="'+window.GL+'";</scr'+'ipt><scr'+'ipt src="'+location.origin+'/engine.js"></scr'+'ipt><scr'+'ipt>GemmaEngine.run(document.getElementById("g"),'+JSON.stringify(p).replace(/</g,"\\u003c")+');</scr'+'ipt></body></html>';
 }
 function gameDoc(g){
 return '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;font-family:sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:manipulation}'+g.css+'</style></head><body>'+g.body+'<scr'+'ipt>'+g.js+'</scr'+'ipt></body></html>';
@@ -511,7 +516,7 @@ var h="";
 if(name=="sen"){
 var nl=Object.keys(likedSet).length,nf=Object.keys(follows).length;
 var own=games.filter(function(g){return g.file_key&&g.creator==me.username;});
-h=THB()+avHtml(me.username,me.avatar_key,"av_me")+'<div class="pname">@'+esc(me.username)+'</div>'+
+h=THB()+avHtml(me.username,me.avatar_key,"av_me")+'<div class="pname" data-nt>@'+esc(me.username)+'</div>'+
 '<div class="pstat">'+nl+' beğeni · '+nf+' takip</div>'+
 BIO_HTML+own.map(function(g){return gchip(g,true);}).join("")+
 '<button class="alink" id="a_out">Çıkış yap</button>';
@@ -527,7 +532,7 @@ renderAuth();
 };
 }else{
 var mine=games.filter(function(g){return g.creator==name;});
-h=THB()+'<div class="av" id="av_o">'+esc(name.charAt(0).toUpperCase())+'</div><div class="pname">@'+esc(name)+'</div>'+
+h=THB()+'<div class="av" id="av_o">'+esc(name.charAt(0).toUpperCase())+'</div><div class="pname" data-nt>@'+esc(name)+'</div>'+
 '<button class="follow" data-who="'+esc(name)+'">Takip et</button><div class="pbio" id="bio_o"></div><div class="pstat">'+mine.length+' oyun</div>'+
 mine.map(function(g){return gchip(g,false);}).join("");
 profile.innerHTML=h;

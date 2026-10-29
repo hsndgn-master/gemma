@@ -1,12 +1,12 @@
 window.GemmaEngine={run:function(box,p,cb){
-cb=cb||{};var edit=!!cb.edit;
+cb=cb||{};var edit=!!cb.edit,EN=window.GL=="en";
 box.innerHTML="";box.onpointerdown=null;box.style.background=p.bg||"#1e3a8a";
 var objs=JSON.parse(JSON.stringify(p.objects||[])),rules=JSON.parse(JSON.stringify(p.rules||[])),spr=p.sprites||{};
 var els={},timers=[],vars=Object.create(null),done=false,last={x:50,y:50},tk=0,depth=0,AC,EC={};
 vars.score=0;vars.life=3;(p.vars||[]).forEach(function(v){if(v&&v.n)vars[v.n]=+v.v||0;});
 var st=rules.map(function(){return {};});
 var TR=edit?"none":"left .06s linear,top .06s linear,transform .1s,font-size .1s,width .1s,height .1s";
-var usesLife=/"life"|\bcan\b/.test(JSON.stringify(rules));
+var usesLife=/\blife\b|\bcan\b/.test(JSON.stringify(rules));
 var ctrl={stop:function(){done=true;timers.forEach(clearInterval);box.onpointerdown=null;box.innerHTML="";},select:select};
 var hudEl=document.createElement("div");
 hudEl.style.cssText="position:absolute;top:12px;left:0;right:0;text-align:center;font:800 34px -apple-system,sans-serif;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5);pointer-events:none;z-index:5";
@@ -16,11 +16,11 @@ function cl(v){return Math.max(0,Math.min(100,v));}
 function find(id){for(var i=0;i<objs.length;i++)if(objs[i].id==id)return objs[i];}
 function byName(n){for(var i=0;i<objs.length;i++)if(objs[i].nm==n)return objs[i];}
 /* ---- hesap motoru (güvenli, eval yok) ---- */
-var FN={rastgele:function(a,b){a=a||0;b=b==null?1:b;return a+Math.random()*(b-a);},yuvarla:Math.round,mutlak:Math.abs,min:Math.min,max:Math.max,taban:Math.floor,"kök":Math.sqrt,
+var FN={rastgele:function(a,b){a=a||0;b=b==null?1:b;return a+Math.random()*(b-a);},yuvarla:Math.round,mutlak:Math.abs,min:Math.min,max:Math.max,taban:Math.floor,"kök":Math.sqrt,random:function(a,b){return FN.rastgele(a,b);},round:Math.round,abs:Math.abs,floor:Math.floor,sqrt:Math.sqrt,
 sin:function(d){return Math.sin(d*Math.PI/180);},cos:function(d){return Math.cos(d*Math.PI/180);}};
 function idf(t){var m=t.split(".");
 if(m.length==2){return function(){var o=byName(m[0]),k=m[1];return o&&(k=="x"||k=="y"||k=="s"||k=="r")?o[k]:0;};}
-return function(){return t=="skor"?vars.score:t=="can"?vars.life:t=="zaman"?tk:t=="dokunX"?last.x:t=="dokunY"?last.y:t=="pi"?Math.PI:(vars[t]||0);};}
+return function(){return t=="skor"?vars.score:t=="can"?vars.life:t=="zaman"?tk:t=="dokunX"?last.x:t=="dokunY"?last.y:t=="pi"?Math.PI:(vars[t]!=null?vars[t]:t=="time"?tk:t=="tapX"?last.x:t=="tapY"?last.y:0);};}
 function parse(s){
 var T=s.match(/\d+\.?\d*|\.\d+|[\p{L}_][\p{L}\p{N}_]*(?:\.\p{L}+)?|[-+*\/%(),]|\S/gu)||[],i=0;
 function bin(l,r,o){return o=="+"?function(){return l()+r();}:o=="-"?function(){return l()-r();}:o=="*"?function(){return l()*r();}:o=="/"?function(){return l()/r();}:function(){return l()%r();};}
@@ -58,7 +58,7 @@ d.contentEditable="true";d.focus();
 try{var rg=document.createRange();rg.selectNodeContents(d);var se=window.getSelection();se.removeAllRanges();se.addRange(rg);}catch(x){}
 d.onkeydown=function(e){if(e.key=="Enter"){e.preventDefault();d.blur();}};
 d.onblur=function(){d.onblur=null;d.onkeydown=null;d.contentEditable="false";d.style.userSelect="none";d.style.webkitUserSelect="none";
-var t=(d.textContent||"").replace(/\s+/g," ").trim();if(!t)t="Yazı";o.tx=t;d.textContent=t;if(cb.onedit)cb.onedit(o.id,t);};
+var t=(d.textContent||"").replace(/\s+/g," ").trim();if(!t)t=EN?"Text":"Yazı";o.tx=t;d.textContent=t;if(cb.onedit)cb.onedit(o.id,t);};
 }
 function select(id){objs.forEach(function(o){if(els[o.id])els[o.id].style.outline=(edit&&o.id==id)?"2px dashed #fff":"none";});}
 function setLast(e){var r=box.getBoundingClientRect();last.x=cl((e.clientX-r.left)/r.width*100);last.y=cl((e.clientY-r.top)/r.height*100);}
@@ -74,7 +74,7 @@ function restart(){ctrl.stop();var n=GemmaEngine.run(box,p,cb);ctrl.stop=n.stop;
 function end(w){if(done)return;done=true;timers.forEach(clearInterval);
 var v=document.createElement("div");
 v.style.cssText="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font:800 38px -apple-system,sans-serif;z-index:9;text-align:center";
-v.innerHTML=(w?"🎉 Kazandın!":"💥 Kaybettin")+'<div style="font:600 18px -apple-system,sans-serif;margin-top:10px">Skor: '+Math.round(vars.score*100)/100+' · Tekrar için dokun</div>';
+v.innerHTML=(w?(EN?"🎉 You won!":"🎉 Kazandın!"):(EN?"💥 You lost":"💥 Kaybettin"))+'<div style="font:600 18px -apple-system,sans-serif;margin-top:10px">'+(EN?"Score: ":"Skor: ")+Math.round(vars.score*100)/100+' · '+(EN?"Tap to retry":"Tekrar için dokun")+'</div>';
 v.onclick=restart;
 box.appendChild(v);}
 function act(a){var t=a.t,o=find(a.o);
