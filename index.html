@@ -155,6 +155,25 @@ body.side #logo .lg,body.onpanel #logo .lg{filter:none}
 .tos a{color:var(--accent)}
 .lgl{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:13px;margin-top:6px}
 .lgl a{color:var(--fg);opacity:.7}
+/* ---- Report ---- */
+.rep{background:rgba(0,0,0,.35);color:#fff;border:0;border-radius:50%;width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rep svg{width:20px;height:20px}
+.card .rep{position:absolute;right:11px;bottom:12px;z-index:3}
+body.side .card .rep{display:none}
+body:not(.side) .like{bottom:58px}
+.acol{display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0;pointer-events:auto}
+body.side #meta .rep{background:var(--soft);color:var(--fg);pointer-events:auto}
+#navRep{display:none!important}
+body.side #nav button#navRep.show{display:flex!important}
+#reported{justify-content:flex-start;align-items:stretch;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:60px;text-align:left}
+#reported>*{flex-shrink:0}
+.rname{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:0;color:var(--fg);font-size:15px;font-weight:600;padding:6px 0;text-decoration:underline}
+.rbtns{display:flex;gap:6px;flex-shrink:0}
+#rview{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:60;display:flex;flex-direction:column}
+.rvbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;padding-top:calc(env(safe-area-inset-top) + 12px)}
+.rvbar b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rvbox{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 0 16px}
+.rvbox iframe{height:100%;aspect-ratio:9/16;max-width:100%;border:0;border-radius:16px;background:#000}
 </style>
 <script src="/i18n.js?v=5"></script>
 <script src="/theme.js?v=5"></script>
@@ -194,11 +213,13 @@ body.side #logo .lg,body.onpanel #logo .lg{filter:none}
 </div>
 <div class="panel" id="profile"></div>
 <div class="panel" id="admin"></div>
+<div class="panel" id="reported"></div>
 <div id="nav">
 <button class="on" data-view="feed"><span class="ic">⌂</span><span class="lb">Ev</span></button>
 <button class="plus" data-view="create"><span class="ic">+</span><span class="lb">Oluştur</span></button>
 <button data-view="profile" aria-label="Profil"><span class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.2"/><path d="M4 20.5c0-4.1 3.6-6.5 8-6.5s8 2.4 8 6.5z"/></svg></span><span class="lb">Profil</span></button>
 <button id="navAdmin" data-view="admin" aria-label="Admin"><span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="lb">Admin</span></button>
+<button id="navRep" data-view="reported" aria-label="Reported"><span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M12 8v4.2"/><circle cx="12" cy="15.4" r=".6" fill="currentColor"/></svg></span><span class="lb">Reported</span></button>
 <button id="themeS" data-theme-btn></button>
 </div>
 <script>
@@ -213,6 +234,21 @@ var API="https://gemma-api.hasanalid120.workers.dev";
 var TERMS_VER="2.0";
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
 function L(tr,en){return window.GL=="en"?en:tr;}
+var REP_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M12 8v4.2"/><circle cx="12" cy="15.4" r=".6" fill="currentColor"/></svg>';
+function repBtn(){return '<button class="rep" aria-label="'+L("Reportla","Report")+'" title="'+L("Reportla","Report")+'">'+REP_SVG+'</button>';}
+async function doReport(g){
+if(!me){openProfile("sen");return;}
+if(g.creator==me.username){alert(L("Kendi oyununu reportlayamazsın.","You can't report your own game."));return;}
+if(!confirm(L("Bu projeyi reportlamak istediğinize emin misiniz?","Are you sure you want to report this project?")))return;
+try{
+var s=(await sb.auth.getSession()).data.session;
+if(!s){openProfile("sen");return;}
+var r=await fetch(API+"/report",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({game_id:g.id})});
+if(r.ok)alert(L("Report gönderildi. Teşekkürler.","Report sent. Thank you."));
+else if(r.status==400)alert(L("Kendi oyununu reportlayamazsın.","You can't report your own game."));
+else alert(L("Report gönderilemedi, tekrar dene.","Could not send the report, try again."));
+}catch(e){alert(L("Bağlantı hatası.","Connection error."));}
+}
 function legalLinks(){
 return '<div class="lgl"><a href="/privacy.html" target="_blank" rel="noopener">'+L("Gizlilik Politikası","Privacy Policy")+'</a><a href="/terms.html" target="_blank" rel="noopener">'+L("Kullanım Şartları","Terms of Service")+'</a></div>';
 }
@@ -368,13 +404,14 @@ var pw=document.getElementById("pw");if(pw)pw.style.visibility=g.file_key?"visib
 if(isPhone){return;}
 var m=document.getElementById("meta");
 if(g.promo){m.innerHTML="";return;}
-m.innerHTML='<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>'+
+m.innerHTML='<div class="acol"><button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>'+repBtn()+'</div>'+
 '<div class="minfo"><div class="who"><button class="name">@'+esc(g.creator)+vb(g.creator)+'</button><button class="follow" data-who="'+esc(g.creator)+'">Takip et</button></div>'+
 '<div class="title">'+esc(g.title)+'</div><div class="desc">'+esc(g.desc)+'</div><div class="tags">'+esc(g.tags)+'</div></div>';
 m.querySelector(".name").onclick=function(){openProfile(g.creator);};
 bindFollow(m.querySelector(".follow"));
 var lk=m.querySelector(".like");
 lk.onclick=function(){doLike(g,lk);};
+m.querySelector(".rep").onclick=function(){doReport(g);};
 refreshLikes();
 refreshFollow();
 }
@@ -382,6 +419,7 @@ refreshFollow();
 var feed=document.getElementById("feed");
 var profile=document.getElementById("profile");
 var create=document.getElementById("create");
+var repP=document.getElementById("reported");
 
 var feedObs=[];
 function playCard(g,frame){
@@ -409,13 +447,14 @@ card.className="card";
 card.innerHTML='<iframe sandbox="allow-scripts"></iframe>'+
 '<div class="info"><div class="who"><button class="name">@'+esc(g.creator)+vb(g.creator)+'</button><button class="follow" data-who="'+esc(g.creator)+'">Takip et</button></div>'+
 '<div class="title">'+esc(g.title)+'</div><div class="desc">'+esc(g.desc)+'</div><div class="tags">'+esc(g.tags)+'</div></div>'+
-'<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>'+
+'<button class="like" data-game="'+esc(g.id)+'">♥<br><small>0</small></button>'+repBtn()+
 (g.file_key?'<div class="pw">powered by <b>gemma engine</b></div>':'');
 feed.appendChild(card);
 var frame=card.querySelector("iframe"),like=card.querySelector(".like");
 card.querySelector(".name").onclick=function(){openProfile(g.creator);};
 bindFollow(card.querySelector(".follow"));
 like.onclick=function(){doLike(g,like);};
+card.querySelector(".rep").onclick=function(){doReport(g);};
 var obs=new IntersectionObserver(function(list){
 list.forEach(function(e){
 if(e.isIntersecting){card._on=true;playCard(g,frame);renderMeta(g);}
@@ -453,12 +492,13 @@ feed.addEventListener("touchstart",function(e){tY=e.touches[0].clientY;tEnd=atEn
 feed.addEventListener("touchend",function(e){if(tEnd&&e.changedTouches[0].clientY-tY<-40&&atEnd())toTop();tEnd=false;},{passive:true});
 buildFeed();
 async function loadGames(){
-var r=await sb.from("games").select("id,creator,title,descr,tags,file_key,thumb_key").order("created_at",{ascending:false}).limit(50);
+var r=await sb.from("games").select("id,creator,title,descr,tags,file_key,thumb_key,blocked").order("created_at",{ascending:false}).limit(50);
+if(r.error)r=await sb.from("games").select("id,creator,title,descr,tags,file_key,thumb_key").order("created_at",{ascending:false}).limit(50);
 loaded=true;
 if(r.error||!r.data){buildFeed();return;}
-var list=r.data.map(function(x){return {id:x.id,creator:x.creator,title:x.title,desc:x.descr,tags:x.tags,file_key:x.file_key,thumb_key:x.thumb_key};});
+var list=r.data.map(function(x){return {id:x.id,creator:x.creator,title:x.title,desc:x.descr,tags:x.tags,file_key:x.file_key,thumb_key:x.thumb_key,blocked:!!x.blocked};});
 await loadFlags();
-games=list.filter(function(g){return !bannedSet[g.creator];});
+games=list.filter(function(g){return !bannedSet[g.creator]&&!g.blocked;});
 buildFeed();
 }
 async function delGame(id,btn){
@@ -485,6 +525,7 @@ document.body.classList.toggle("onpanel",v!="feed");
 create.style.display=v=="create"?"flex":"none";
 profile.style.display=v=="profile"?"flex":"none";
 adminP.style.display=v=="admin"?"flex":"none";
+repP.style.display=v=="reported"?"flex":"none";
 setNav(v);
 }
 
@@ -610,6 +651,7 @@ if(!me){openProfile("sen");return;}
 showView("create");
 }
 else if(v=="admin"){if(!me||!me.role)return;showView("admin");loadAdmin();}
+else if(v=="reported"){if(!me||!me.role)return;showView("reported");loadReported();}
 else{showView(v);}
 };
 });
@@ -621,7 +663,8 @@ function updateAdminNav(){
 var b=$a("navAdmin");if(!b)return;
 var ok=!!(me&&me.role);
 b.classList.toggle("show",ok&&!isPhone);
-if(!ok&&adminP.style.display=="flex")showView("feed");
+var rb=$a("navRep");if(rb)rb.classList.toggle("show",ok&&!isPhone);
+if(!ok&&(adminP.style.display=="flex"||repP.style.display=="flex"))showView("feed");
 }
 async function admCall(path,method,body){
 var ss=(await sb.auth.getSession()).data.session;
@@ -685,6 +728,55 @@ if(b.id=="ad_ban"){u=admUser("ad_bu");if(!u){$a("ad_bm").textContent=window.t("K
 else if(b.dataset.unban){u=b.dataset.unban;admAct("/admin/ban",{username:u,ban:false},"ad_bm","Banı kaldırıldı:",u);}
 else if(b.id=="ad_hel"){u=admUser("ad_hu");if(!u){$a("ad_hm").textContent=window.t("Kullanıcı adını yaz.");return;}admAct("/admin/helper",{username:u,on:true},"ad_hm","Yardımcı admin yapıldı:",u);}
 else if(b.dataset.unhelp){u=b.dataset.unhelp;admAct("/admin/helper",{username:u,on:false},"ad_hm","Yetki alındı:",u);}
+};
+
+/* ---- Reported sekmesi (admin) ---- */
+function repHtml(d){
+var h='<div class="aw"><div class="pname">Reported</div><div class="pstat"><button class="alink" id="rp_ref">'+L("Yenile","Refresh")+'</button></div>';
+h+='<div class="acard"><h3>Reported ('+d.reported.length+')</h3>'+(d.reported.length?d.reported.map(function(x){
+return '<div class="arow"><button class="rname" data-nt data-play="'+esc(x.id)+'" data-pt="'+esc(x.t)+'">'+esc(x.t)+' · @'+esc(x.u)+' · '+Number(x.c)+' report</button><span class="rbtns"><button class="asm d" data-block="'+esc(x.id)+'">Block</button><button class="asm g" data-false="'+esc(x.id)+'">False Report</button></span></div>';
+}).join(""):'<div class="al">'+L("Report edilen oyun yok.","No reported games.")+'</div>')+'</div>';
+h+='<div class="acard"><h3>'+L("Engellenen oyunlar","Blocked games")+' ('+d.blocked.length+')</h3>'+(d.blocked.length?d.blocked.map(function(x){
+return '<div class="arow"><button class="rname" data-nt data-play="'+esc(x.id)+'" data-pt="'+esc(x.t)+'">'+esc(x.t)+' · @'+esc(x.u)+'</button></div>';
+}).join(""):'<div class="al">'+L("Engellenen oyun yok.","No blocked games.")+'</div>')+'</div>';
+return h+'</div>';
+}
+async function loadReported(){
+repP.innerHTML=THB()+'<div class="aw"><div class="pname">Reported</div><div class="pstat">'+L("Yükleniyor...","Loading...")+'</div></div>';
+var d;
+try{d=await admCall("/admin/reports");}
+catch(e){repP.innerHTML=THB()+'<div class="aw"><div class="pname">Reported</div><div class="amsg">'+esc(e.message)+'</div></div>';return;}
+repP.innerHTML=THB()+repHtml(d);
+}
+async function viewGame(id,title){
+try{
+var ss=(await sb.auth.getSession()).data.session;if(!ss)return;
+var r=await fetch(API+"/admin/game/"+encodeURIComponent(id),{headers:{Authorization:"Bearer "+ss.access_token}});
+if(!r.ok){alert(L("Oyun açılamadı.","Could not open the game."));return;}
+var p=await r.json();
+var o=document.createElement("div");
+o.id="rview";
+o.innerHTML='<div class="rvbar"><b data-nt>'+esc(title)+'</b><button class="asm" id="rv_x">'+L("Kapat","Close")+'</button></div><div class="rvbox"><iframe sandbox="allow-scripts"></iframe></div>';
+document.body.appendChild(o);
+o.querySelector("iframe").srcdoc=engineDoc(p);
+o.querySelector("#rv_x").onclick=function(){o.remove();};
+}catch(e){alert(L("Bağlantı hatası.","Connection error."));}
+}
+repP.onclick=async function(e){
+var b=e.target.closest("button");if(!b)return;
+var x=b.dataset;
+if(b.id=="rp_ref"){loadReported();return;}
+if(x.play){viewGame(x.play,x.pt||"");return;}
+var id=x.block||x["false"];
+if(!id)return;
+var blk=!!x.block;
+if(blk&&!confirm(L("Bu oyun engellensin mi? Admin olmayan herkesin erişimine kapanır ve akıştan kaldırılır.","Block this game? It will be closed to everyone except admins and removed from the feed.")))return;
+b.disabled=true;
+try{
+await admCall("/admin/report-action","POST",{game_id:id,action:blk?"block":"false"});
+if(blk){games=games.filter(function(g){return g.id!=id;});buildFeed();}
+await loadReported();
+}catch(err){b.disabled=false;alert(err.message);}
 };
 
 var draft={thumb:null};
