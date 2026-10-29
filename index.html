@@ -142,13 +142,26 @@ body.side #nav button#navAdmin.show{display:flex!important}
 .asm{background:var(--inv);color:var(--invfg);border:0;border-radius:10px;padding:10px 14px;font-weight:700;font-size:14px;white-space:nowrap}
 .asm.d{background:#dc2626;color:#fff}.asm.g{background:var(--field);color:var(--fg);padding:6px 10px}
 .promo .phint{position:absolute;left:0;right:0;bottom:18px;font-size:13px;opacity:.75;z-index:1}
+/* ---- Logo (PNG) ---- */
+#logo .lg{height:40px;width:auto;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+#logo .lg-l{display:none}
+body:not(.side) #logo .lg{height:26px}
+body.side #logo .lg,body.onpanel #logo .lg{filter:none}
+:root[data-theme="light"] body.side #logo .lg-l,:root[data-theme="light"] body.onpanel #logo .lg-l{display:block}
+:root[data-theme="light"] body.side #logo:has(.lg-l) .lg-d,:root[data-theme="light"] body.onpanel #logo:has(.lg-l) .lg-d{display:none}
+/* ---- Yasal: onay kutusu ve linkler ---- */
+.tos{display:flex;align-items:flex-start;gap:10px;width:100%;max-width:340px;text-align:left;font-size:14px;line-height:1.45;cursor:pointer}
+.panel .tos input{width:22px;height:22px;max-width:none;padding:0;margin:1px 0 0;border-radius:6px;flex-shrink:0;accent-color:var(--accent)}
+.tos a{color:var(--accent)}
+.lgl{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:13px;margin-top:6px}
+.lgl a{color:var(--fg);opacity:.7}
 </style>
 <script src="/i18n.js?v=5"></script>
 <script src="/theme.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
-<div id="logo">Gemma</div>
+<div id="logo"><img class="lg lg-d" src="/logo.png?v=1" alt="Gemma" onerror="this.replaceWith(document.createTextNode('Gemma'))"><img class="lg lg-l" src="/logo-light.png?v=1" alt="" onerror="this.remove()"></div>
 <button id="themeM" data-theme-btn></button>
 <div id="feed"></div>
 <div id="meta"></div>
@@ -197,7 +210,17 @@ var likedSet={};
 var likeCounts={};
 var follows={};
 var API="https://gemma-api.hasanalid120.workers.dev";
+var TERMS_VER="2.0";
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
+function L(tr,en){return window.GL=="en"?en:tr;}
+function legalLinks(){
+return '<div class="lgl"><a href="/privacy.html" target="_blank" rel="noopener">'+L("Gizlilik Politikası","Privacy Policy")+'</a><a href="/terms.html" target="_blank" rel="noopener">'+L("Kullanım Şartları","Terms of Service")+'</a></div>';
+}
+function tosHtml(){
+var a1='<a href="/terms.html" target="_blank" rel="noopener">',a2='<a href="/privacy.html" target="_blank" rel="noopener">';
+if(window.GL=="en")return 'I am at least 13 years old (and, if I am not yet an adult where I live, my parent or guardian allows me to use Gemma). I have read and accept the '+a1+'Terms of Service</a> and the '+a2+'Privacy Policy</a>.';
+return 'En az 13 yaşındayım (ve bulunduğum yerde reşit değilsem ebeveynim/vasim Gemma\'yı kullanmama izin veriyor). '+a1+'Kullanım Şartları</a>\'nı ve '+a2+'Gizlilik Politikası</a>\'nı okudum, kabul ediyorum.';
+}
 
 var isPhone=/iPhone|iPod|Android.+Mobile/i.test(navigator.userAgent);
 if(!isPhone){document.body.classList.add("side");}
@@ -474,9 +497,11 @@ profile.innerHTML=THB()+'<div class="pname">'+(k?"Hesap oluştur":"Giriş yap")+
 (k?'<input id="a_user" placeholder="Kullanıcı adı (harf, rakam, _)" autocapitalize="none" autocorrect="off" maxlength="20">':'')+
 '<input id="a_mail" type="email" placeholder="E-posta" autocapitalize="none" autocorrect="off">'+
 '<input id="a_pass" type="password" placeholder="Şifre (en az 6 karakter)">'+
+(k?'<label class="tos"><input type="checkbox" id="a_tos"><span>'+tosHtml()+'</span></label>':'')+
 '<button class="abtn" id="a_go">'+(k?"Kayıt ol":"Giriş yap")+'</button>'+
 '<div class="amsg" id="a_msg"></div>'+
-'<button class="alink" id="a_sw">'+(k?"Zaten hesabım var":"Hesabım yok, kayıt ol")+'</button>';
+'<button class="alink" id="a_sw">'+(k?"Zaten hesabım var":"Hesabım yok, kayıt ol")+'</button>'+
+legalLinks();
 var msg=document.getElementById("a_msg");
 document.getElementById("a_sw").onclick=function(){authMode=k?"giris":"kayit";renderAuth();};
 document.getElementById("a_go").onclick=async function(){
@@ -485,12 +510,13 @@ var mail=document.getElementById("a_mail").value.trim();
 var pass=document.getElementById("a_pass").value;
 msg.className="amsg";msg.textContent="";
 if(!mail||!pass){msg.textContent="E-posta ve şifreyi yaz.";return;}
+if(k&&!document.getElementById("a_tos").checked){msg.textContent=L("Devam etmek için Kullanım Şartları'nı ve Gizlilik Politikası'nı kabul etmelisin.","To continue, you must accept the Terms of Service and the Privacy Policy.");return;}
 btn.disabled=true;
 try{
 if(k){
 var u=document.getElementById("a_user").value.trim().toLowerCase();
 if(!/^[a-z0-9_]{3,20}$/.test(u)){msg.textContent="Kullanıcı adı 3-20 karakter olmalı, sadece harf, rakam ve _ kullan.";btn.disabled=false;return;}
-var r=await sb.auth.signUp({email:mail,password:pass,options:{data:{username:u}}});
+var r=await sb.auth.signUp({email:mail,password:pass,options:{data:{username:u,terms_accepted_at:new Date().toISOString(),terms_version:TERMS_VER}}});
 if(r.error){msg.textContent=trErr(r.error.message);btn.disabled=false;return;}
 if(!r.data.session){msg.className="amsg ok";msg.textContent="Kayıt oldu. Şimdi giriş yap.";authMode="giris";btn.disabled=false;return;}
 }else{
@@ -546,7 +572,7 @@ var own=games.filter(function(g){return g.file_key&&g.creator==me.username;});
 h=THB()+avHtml(me.username,me.avatar_key,"av_me")+'<div class="pname" data-nt>@'+esc(me.username)+vb(me.username)+'</div>'+
 '<div class="pstat">'+nl+' beğeni · '+nf+' takip</div>'+
 BIO_HTML+own.map(function(g){return gchip(g,true);}).join("")+
-'<button class="alink" id="a_out">Çıkış yap</button>';
+'<button class="alink" id="a_out">Çıkış yap</button>'+legalLinks();
 profile.innerHTML=h;
 profile.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(ev){ev.stopPropagation();delGame(b.dataset.del,b);};});
 bindGo();bindBio();
