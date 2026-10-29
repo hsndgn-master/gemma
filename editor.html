@@ -92,7 +92,6 @@ body{transition:background-color .25s,color .25s}
 <div class="pf"><label>Başlık</label><input id="pb_t" maxlength="40" placeholder="Oyunun adı"><div class="pc" id="pb_tc">0/40</div></div>
 <div class="pf"><label>Açıklama</label><textarea id="pb_d" maxlength="120" placeholder="Oyun hakkında kısa bir cümle"></textarea><div class="pc" id="pb_dc">0/120</div></div>
 <div class="pf"><label>Hashtag'ler (en fazla 5)</label><input id="pb_g" maxlength="80" placeholder="refleks kolay uzay" autocapitalize="none" autocorrect="off"><div class="ptp" id="pb_gp"></div></div>
-<div class="pf"><label>Thumbnail (kapak resmi, isteğe bağlı)</label><div class="pth"><div class="pthb" id="pb_tb">Resim yok</div><label class="pick">Resim seç<input id="pb_f" type="file" accept="image/*" style="display:none"></label></div></div>
 <button class="btn big" id="pb_go">Yayınla</button>
 <div class="amsg" id="pb_m"></div>
 </div></div></div>
@@ -147,18 +146,6 @@ $("pb_t").oninput=function(){pbCount("pb_t","pb_tc",40);};
 $("pb_d").oninput=function(){pbCount("pb_d","pb_dc",120);};
 $("pb_g").oninput=function(){$("pb_gp").textContent=pbTags(this.value).join(" ");};
 $("pb_x").onclick=function(){$("pb").style.display="none";};
-$("pb_f").onchange=function(e){
-var f=e.target.files[0];if(!f)return;
-var r=new FileReader();
-r.onload=function(){var img=new Image();
-img.onload=function(){var c=document.createElement("canvas");c.width=360;c.height=640;
-var x=c.getContext("2d"),s=Math.max(360/img.width,640/img.height),w=img.width*s,h=img.height*s;
-x.drawImage(img,(360-w)/2,(640-h)/2,w,h);
-pth=c.toDataURL("image/jpeg",0.7);
-$("pb_tb").innerHTML='<img src="'+pth+'">';};
-img.src=r.result;};
-r.readAsDataURL(f);
-};
 async function doPub(){
 var btn=$("pb_go"),m=$("pb_m");m.className="amsg";m.textContent="";
 var t=$("pb_t").value.trim();
@@ -167,7 +154,7 @@ btn.disabled=true;m.textContent="Yayınlanıyor...";
 try{
 var s=(await getSb().auth.getSession()).data.session;
 if(!s){m.textContent="Oturum bitti. Ana sayfadan tekrar giriş yap.";btn.disabled=false;return;}
-var r=await fetch(API+"/publish",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({project:cur,title:t,descr:$("pb_d").value.trim(),tags:$("pb_g").value,thumb:pth})});
+var r=await fetch(API+"/publish",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({project:cur,title:t,descr:$("pb_d").value.trim(),tags:$("pb_g").value })});
 var j={};try{j=await r.json();}catch(x){}
 if(!r.ok){m.textContent=j.error||"Yayınlanamadı.";btn.disabled=false;return;}
 m.className="amsg ok";m.textContent="Yayınlandı! 🎉";
@@ -178,7 +165,6 @@ $("pub").onclick=async function(){
 if(!window.supabase){alert("Bağlantı kurulamadı, sayfayı yenile.");return;}
 var s=(await getSb().auth.getSession()).data.session;
 if(!s){alert("Yayınlamak için önce giriş yapmalısın. Ana sayfadan giriş yap.");return;}
-pth=null;$("pb_tb").textContent="Resim yok";$("pb_f").value="";
 $("pb_t").value=cur.name;$("pb_d").value="";$("pb_g").value="";$("pb_gp").textContent="";
 pbCount("pb_t","pb_tc",40);pbCount("pb_d","pb_dc",120);
 $("pb_m").className="amsg";$("pb_m").textContent="";
