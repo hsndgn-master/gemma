@@ -67,9 +67,13 @@ button,select,input{font:inherit}
 .tb2{width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .tb2 svg{width:20px;height:20px}
 summary{cursor:pointer;font-size:15px}
+.sub{margin:6px 0 4px 4px;border-left:3px solid var(--bd2);padding-left:8px}
+.mrow{background:var(--field);border-radius:10px;padding:6px 8px;margin:6px 0}
+.row input[type=range]{flex:1;min-width:0;padding:0;border:0;background:none}
+.act .btn.sm,.rule>.btn.sm{margin-top:6px}
 body{transition:background-color .25s,color .25s}
 </style>
-<script src="/i18n.js?v=5"></script>
+<script src="/i18n.js?v=6"></script>
 <script src="/theme.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
 <div id="list"><div class="bar"><button class="btn g" id="home">←</button><b>Projelerim</b><button class="btn g tb2" data-theme-btn></button><button class="btn" id="new">+ Yeni proje</button></div><div class="in" id="pl"></div></div>
@@ -96,19 +100,24 @@ body{transition:background-color .25s,color .25s}
 <button class="btn big" id="pb_go">Yayınla</button>
 <div class="amsg" id="pb_m"></div>
 </div></div></div>
-<script src="/engine.js?v=5"></script>
+<script src="/engine.js?v=6"></script>
 <script>
-var K="gemma_projects",P=[],cur=null,sel=null,mode="edit",tab="obj",ctrl=null;
+var K="gemma_projects",P=[],cur=null,sel=null,mode="edit",tab="obj",ctrl=null,editCam={x:0,y:0};
 var EM=["😀","🐱","🐶","⭐","🍎","🚀","👾","💎","🎈","🌙","🔥","🦊","🪨","🏆","🎯","❤️"];
-var WH=[["start","Oyun başlayınca"],["tapany","Ekrana dokunulunca"],["tap","Nesneye dokunulunca"],["touch","Nesne başka nesneye değince"],["edge","Nesne kenara değince"],["always","Sürekli (her an)"],["every","Her … saniyede"],["after","… saniye sonra (bir kez)"],["cond","Şart doğru olunca"],["event","Olay gelince"]];
+var WH=[["start","Oyun başlayınca"],["tapany","Ekrana dokunulunca"],["tap","Nesneye dokunulunca"],["hold","Nesneye basılı tutulurken"],["holdany","Ekrana basılı tutulurken"],["up","Nesne bırakılınca"],["upany","Ekran bırakılınca"],["swipe","Kaydırma yapılınca"],["touch","Nesne başka nesneye değince"],["edge","Nesne kenara değince"],["oclone","Klon oluşunca"],["always","Sürekli (her an)"],["every","Her … saniyede"],["after","… saniye sonra (bir kez)"],["cond","Şart doğru olunca"],["event","Olay gelince"]];
 var CD=[["none","Her zaman"],["expr","Şart var"]];
 var OP=[[">","büyükse"],["<","küçükse"],["=","eşitse"],["!=","eşit değilse"],[">=","büyük/eşitse"],["<=","küçük/eşitse"]];
-var DO=[["move","Taşı"],["forward","İleri git (dönüş yönünde)"],["goto","Şu konuma git"],["gotap","Dokunulan yere git"],["jump","Rastgele yere git"],["goobj","Nesnenin yerine git"],["towards","Nesneye doğru ilerle"],["setp","Nesnenin özelliğini ayarla"],["vel","Hızı ayarla"],["rotate","Döndür"],["grow","Büyüt / küçült (%)"],["hide","Gizle"],["show","Göster"],["score","Skor ekle"],["life","Can ekle (eksi = azalt)"],["set","Değişkene ata (=)"],["add","Değişkene ekle (+=)"],["bg","Arka plan rengi"],["bghue","Arka plan renk tonu (0-360)"],["emit","Olay gönder"],["beep","Ses çal"],["restart","Oyunu baştan başlat"],["win","Oyunu kazan"],["lose","Oyunu kaybet"]];
-var OBJ=["move","forward","goto","gotap","jump","rotate","grow","hide","show","setp","towards","goobj","vel"];
-var TXT={t:1,op:1,name:1,p:1,c:1},EXP={v:1,v2:1,sec:1,n:1,a:1};
-var PR=[["x","Sol-sağ (x)"],["y","Yukarı-aşağı (y)"],["s","Boyut"],["r","Dönüş"]];
+var JN=[["and","ve"],["or","veya"]];
+var DIR=[["left","Sola"],["right","Sağa"],["up","Yukarı"],["down","Aşağı"]];
+var SHP=[["rect","Dikdörtgen"],["round","Yuvarlak köşeli"],["ellipse","Elips"]];
+var DO=[["move","Taşı"],["forward","İleri git (dönüş yönünde)"],["goto","Şu konuma git"],["gotap","Dokunulan yere git"],["jump","Rastgele yere git"],["goobj","Nesnenin yerine git"],["towards","Nesneye doğru ilerle"],["setp","Nesnenin özelliğini ayarla"],["vel","Hızı ayarla"],["rotate","Döndür"],["grow","Büyüt / küçült (%)"],["hide","Gizle"],["show","Göster"],["clone","Klonla (kopya oluştur)"],["delete","Sil (klon) / gizle"],["score","Skor ekle"],["life","Can ekle (eksi = azalt)"],["set","Değişkene ata (=)"],["add","Değişkene ekle (+=)"],["bg","Arka plan rengi"],["bghue","Arka plan renk tonu (0-360)"],["emit","Olay gönder"],["beep","Ses çal"],["restart","Oyunu baştan başlat"],["win","Oyunu kazan"],["lose","Oyunu kaybet"],["if","Eğer … ise"],["repeat","Tekrarla (döngü)"],["while","Şart doğruyken tekrarla"],["wait","Bekle, sonra yap"]];
+var OBJ=["move","forward","goto","gotap","jump","rotate","grow","hide","show","setp","towards","goobj","vel","clone","delete"];
+var BLK={repeat:1,while:1,if:1,wait:1};
+var DEFV={beep:440,emit:0,bghue:180,setp:50,towards:1,vel:10,set:0,add:1,repeat:3,wait:1,clone:0,"delete":0};
+var TXT={t:1,op:1,name:1,p:1,c:1,j:1,dir:1,shape:1},EXP={v:1,v2:1,sec:1,n:1,a:1};
+var PR=[["x","Sol-sağ (x)"],["y","Yukarı-aşağı (y)"],["s","Boyut"],["r","Dönüş"],["vx","Yatay hız"],["vy","Dikey hız"],["g","Yerçekimi"],["op","Saydamlık (%)"],["w","Genişlik"],["h","Yükseklik"]];
 var EDG=[["none","Sınırda kalsın"],["stop","Dur"],["bounce","Sek"],["wrap","Öbür taraftan çıksın"]];
-var RES=["skor","can","zaman","dokunX","dokunY","pi","score","life","time","tapX","tapY"];
+var RES=["skor","can","zaman","dokunX","dokunY","pi","score","life","time","tapX","tapY","touchX","touchY","i","pressed","basili","and","or","not","ve","veya","degil"];
 function pv(k,v){if(TXT[k])return v.trim();if(EXP[k]){v=v.trim();return v!==""&&!isNaN(+v)?+v:v;}return +v;}
 function cleanName(v,d){v=String(v).trim().replace(/[^\p{L}\p{N}_]/gu,"_").replace(/^(\d)/,"_$1").slice(0,20)||d;return RES.indexOf(v)>-1?v+"_":v;}
 function uniq(n,list,key,self){var b=n,k=2;while(list.some(function(x){return x!==self&&x[key]==n;}))n=b+k++;return n;}
@@ -177,7 +186,7 @@ function modeBtn(){$("mode").textContent=mode=="edit"?"▶ Oyna":"✎ Düzenle";
 function openP(i){
 cur=P[i];cur.sprites=cur.sprites||{};cur.vars=cur.vars||[];cur.nsp=cur.nsp||1;
 cur.rules.forEach(fix);
-sel=cur.objects.length?cur.objects[0].id:null;mode="edit";tab="obj";
+sel=cur.objects.length?cur.objects[0].id:null;mode="edit";tab="obj";editCam={x:0,y:0};
 $("list").style.display="none";$("ed").style.display="flex";
 $("pn").textContent=cur.name;modeBtn();stage();panel();
 }
@@ -185,7 +194,7 @@ function stage(){
 cur.objects.forEach(function(o){if(!o.nm)o.nm=window.t("nesne")+o.id;});
 stop();var box=$("stage");
 if(mode=="play")ctrl=GemmaEngine.run(box,cur);
-else ctrl=GemmaEngine.run(box,cur,{edit:1,sel:sel,
+else ctrl=GemmaEngine.run(box,cur,{edit:1,sel:sel,cam:editCam,
 onselect:function(id){sel=id;if(ctrl)ctrl.select(id);panel();},
 onedit:function(id,t){var o=fo(id);if(!o)return;o.tx=t;sv();panel();},
 onmove:function(id,x,y){var o=fo(id);if(!o)return;o.x=Math.round(x);o.y=Math.round(y);sv();panel();}});
@@ -194,21 +203,39 @@ function sl(a,v,at){return '<select '+at+'>'+a.map(function(x){return '<option v
 function ob(v,at){return sl(cur.objects.map(function(o){return [o.id,(isSp(o)?"🖼️":o.tx!=null?o.tx.slice(0,8):o.e)+" "+(o.nm||o.id)];}),v,at);}
 function nm(v,at){return '<input type="text" autocapitalize="none" autocorrect="off" value="'+esc(v)+'" '+at+' placeholder="sayı veya hesap">';}
 function rw(l,c){return '<div class="row"><label>'+l+'</label>'+c+'</div>';}
+function listAt(r,l){var L=r.do;if(!l)return L;var p=l.split(".");for(var k=0;k<p.length;k+=2){L=L[+p[k]][p[k+1]];}return L;}
+function fixAct(a,f,f2){
+if(!fo(a.o))a.o=f;
+if(a.t=="clone"){if(a.tg==null||(a.tg!==0&&!fo(a.tg)))a.tg=0;}else if(!fo(a.tg))a.tg=f2;
+if(a.v==null)a.v=1;if(a.v2==null)a.v2=0;if(a.p==null)a.p="x";if(a.name==null)a.name="";if(a.c==null)a.c=cur.bg;
+if(a.name===""&&(a.t=="set"||a.t=="add")&&cur.vars[0])a.name=cur.vars[0].n;
+if(a.t=="if"||a.t=="while"){if(a.a==null)a.a="";if(a.op==null)a.op=">";if(a.n==null)a.n=0;if(!Array.isArray(a.more))a.more=[];}
+if(BLK[a.t]){if(!Array.isArray(a.do))a.do=[];if(a.t=="if"&&!Array.isArray(a.els))a.els=[];
+a.do.forEach(function(q){fixAct(q,f,f2);});if(a.els)a.els.forEach(function(q){fixAct(q,f,f2);});}}
 function fix(r){
 var f=cur.objects[0]?cur.objects[0].id:0,f2=cur.objects[1]?cur.objects[1].id:f;
 r.when=r.when||{t:"start"};var w=r.when;
 if(!fo(w.o))w.o=f;if(!fo(w.o2))w.o2=f2;
-if(w.sec==null)w.sec=1;if(w.name==null)w.name=window.t("olay1");if(w.a==null)w.a="";if(w.op==null)w.op=">";if(w.n==null)w.n=0;
+if(w.sec==null)w.sec=1;if(w.name==null)w.name=window.t("olay1");if(w.a==null)w.a="";if(w.op==null)w.op=">";if(w.n==null)w.n=0;if(w.dir==null)w.dir="left";if(!Array.isArray(w.more))w.more=[];
 r.if=r.if||{t:"none"};var c=r.if;
 if(c.t=="score"||c.t=="life"){c.a=c.t=="score"?"skor":"can";c.t="expr";}
-if(c.op==null)c.op=">";if(c.n==null)c.n=0;if(c.a==null)c.a="";
+if(c.op==null)c.op=">";if(c.n==null)c.n=0;if(c.a==null)c.a="";if(!Array.isArray(c.more))c.more=[];
 if(!Array.isArray(r.do))r.do=r.do?[r.do]:[];
-r.do.forEach(function(a){if(!fo(a.o))a.o=f;if(!fo(a.tg))a.tg=f2;if(a.v==null)a.v=1;if(a.v2==null)a.v2=0;if(a.p==null)a.p="x";if(a.name==null)a.name="";if(a.c==null)a.c=cur.bg;
-if(a.name===""&&(a.t=="set"||a.t=="add")&&cur.vars[0])a.name=cur.vars[0].n;});
+r.do.forEach(function(a){fixAct(a,f,f2);});
 }
 function vsel(v,at){var a=cur.vars.map(function(x){return [x.n,x.n];});if(!a.length)return '<span style="font-size:13px;opacity:.7">Önce "Değişkenler" sekmesinden değişken ekle</span>';return sl(a,v,at);}
-function actH(d,i,j){
-var a='data-r="'+i+'" data-ai="'+j+'" data-p=',t=d.t;
+function obn(v,at){return sl([[0,"— (kendi konumu)"]].concat(cur.objects.map(function(o){return [o.id,(isSp(o)?"🖼️":o.tx!=null?o.tx.slice(0,8):o.e)+" "+(o.nm||o.id)];})),v,at);}
+function a2(r,l,i){return 'data-r="'+r+'" data-l="'+l+'" data-ai="'+i+'" data-p=';}
+function subp(l,j,n){return (l?l+".":"")+j+"."+n;}
+function condRows(c,pre,a){return rw("Sol taraf",nm(c.a,a+'"'+pre+'a"'))+rw("Karşılaştır",sl(OP,c.op,a+'"'+pre+'op"'))+rw("Sağ taraf",nm(c.n,a+'"'+pre+'n"'));}
+function moreRows(c,pre,a,cs,ex){
+var h='';(c.more||[]).forEach(function(m,k){var q=a+'"'+pre+'m.'+k+'.';
+h+='<div class="mrow">'+rw("Bağlaç",sl(JN,m.j||"and",q+'j"'))+rw("Sol taraf",nm(m.a,q+'a"'))+rw("Karşılaştır",sl(OP,m.op,q+'op"'))+rw("Sağ taraf",nm(m.n,q+'n"'))+'<button class="btn g sm" data-cdel="'+cs+'" data-ci="'+k+'" '+ex+'>Şartı sil</button></div>';});
+return h+'<button class="btn g sm" data-cadd="'+cs+'" '+ex+'>+ Şart ekle (ve/veya)</button>';}
+function condAll(c,pre,a,cs,ex){return condRows(c,pre,a)+moreRows(c,pre,a,cs,ex);}
+function actsH(list,i,lp){return (list||[]).map(function(d,j){return actH(d,i,lp,j);}).join("")+'<button class="btn g sm" data-na="'+i+'" data-nl="'+lp+'">+ Eylem ekle</button>';}
+function actH(d,i,l,j){
+var a=a2(i,l,j),t=d.t,ex='data-r="'+i+'" data-l="'+l+'" data-ai="'+j+'"';
 var h='<div class="act">'+rw("Eylem",sl(DO,t,a+'"t"'));
 if(OBJ.indexOf(t)>-1)h+=rw("Hangisi",ob(d.o,a+'"o"'));
 if(t=="move")h+=rw("Sağa(+) Sola(−)",nm(d.v,a+'"v"'))+rw("Aşağı(+) Yukarı(−)",nm(d.v2,a+'"v2"'));
@@ -226,25 +253,29 @@ else if(t=="bg")h+=rw("Renk",'<input type="color" value="'+(d.c||"#1e3a8a")+'" '
 else if(t=="bghue")h+=rw("Ton (0-360)",nm(d.v,a+'"v"'));
 else if(t=="emit")h+=rw("Olay adı",'<input type="text" value="'+esc(d.name)+'" '+a+'"name">')+rw("Kaç sn sonra",nm(d.v,a+'"v"'));
 else if(t=="beep")h+=rw("Tiz-pes (Hz)",nm(d.v,a+'"v"'));
-return h+'<button class="btn g sm" data-dar="'+i+'" data-dai="'+j+'">Eylemi sil</button></div>';
+else if(t=="clone")h+=rw("Nerede doğsun",obn(d.tg,a+'"tg"'))+rw("Sağa(+) Sola(−)",nm(d.v,a+'"v"'))+rw("Aşağı(+) Yukarı(−)",nm(d.v2,a+'"v2"'));
+else if(t=="repeat")h+=rw("Kaç kez",nm(d.v,a+'"v"'))+'<div class="hint">Tekrarlanacak eylemler:</div><div class="sub">'+actsH(d.do,i,subp(l,j,"do"))+'</div>';
+else if(t=="while")h+=condAll(d,"",a,"a",ex)+'<div class="hint">Tekrarlanacak eylemler:</div><div class="sub">'+actsH(d.do,i,subp(l,j,"do"))+'</div>';
+else if(t=="if")h+=condAll(d,"",a,"a",ex)+'<div class="hint">Doğruysa:</div><div class="sub">'+actsH(d.do,i,subp(l,j,"do"))+'</div><div class="hint">Değilse:</div><div class="sub">'+actsH(d.els,i,subp(l,j,"els"))+'</div>';
+else if(t=="wait")h+=rw("Saniye",nm(d.v,a+'"v"'))+'<div class="hint">Sonra yapılacaklar:</div><div class="sub">'+actsH(d.do,i,subp(l,j,"do"))+'</div>';
+return h+'<button class="btn g sm" data-dar="'+i+'" data-dal="'+l+'" data-dai="'+j+'">Eylemi sil</button></div>';
 }
-function condRows(c,pre,a){return rw("Sol taraf",nm(c.a,a+'"'+pre+'a"'))+rw("Karşılaştır",sl(OP,c.op,a+'"'+pre+'op"'))+rw("Sağ taraf",nm(c.n,a+'"'+pre+'n"'));}
 function ruleH(r,i){
-fix(r);var w=r.when,c=r.if,a='data-r="'+i+'" data-p=';
+fix(r);var w=r.when,c=r.if,a='data-r="'+i+'" data-p=',ex='data-r="'+i+'"';
 var h='<div class="rule"><div class="rt">Kural '+(i+1)+'</div>'+rw("Ne zaman",sl(WH,w.t,a+'"w.t"'));
-if(w.t=="tap"||w.t=="edge")h+=rw("Hangisi",ob(w.o,a+'"w.o"'));
+if(w.t=="tap"||w.t=="edge"||w.t=="hold"||w.t=="up"||w.t=="oclone")h+=rw("Hangisi",ob(w.o,a+'"w.o"'));
 if(w.t=="touch")h+=rw("Bu nesne",ob(w.o,a+'"w.o"'))+rw("Buna değince",ob(w.o2,a+'"w.o2"'));
+if(w.t=="swipe")h+=rw("Yön",sl(DIR,w.dir,a+'"w.dir"'));
 if(w.t=="every"||w.t=="after")h+=rw("Saniye",nm(w.sec,a+'"w.sec"'));
 if(w.t=="event")h+=rw("Olay adı",'<input type="text" value="'+esc(w.name)+'" '+a+'"w.name">');
-if(w.t=="cond")h+=condRows(w,"w.",a);
+if(w.t=="cond")h+=condAll(w,"w.",a,"w",ex);
 h+=rw("Şart",sl(CD,c.t,a+'"c.t"'));
-if(c.t!="none")h+=condRows(c,"c.",a);
-h+='<div class="hint">Ne olsun:</div>';
-r.do.forEach(function(d,j){h+=actH(d,i,j);});
-return h+'<div style="margin-top:10px;display:flex;gap:8px"><button class="btn g" data-na="'+i+'">+ Eylem ekle</button><button class="btn g" data-dr="'+i+'">Kuralı sil</button></div></div>';
+if(c.t!="none")h+=condAll(c,"c.",a,"c",ex);
+h+='<div class="hint">Ne olsun:</div>'+r.do.map(function(d,j){return actH(d,i,"",j);}).join("");
+return h+'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn g" data-na="'+i+'" data-nl="">+ Eylem ekle</button><button class="btn g" data-dr="'+i+'">Kuralı sil</button></div></div>';
 }
-var HELP_EN='<details class="rule"><summary><b>💡 You can type a formula instead of a number</b></summary><div class="hint" style="opacity:.85;line-height:1.6">You can type a formula in any box that expects a number:<br>• <b>points*2</b>, <b>life+1</b>, <b>(a+b)/2</b> (add +, subtract -, multiply *, divide /)<br>• Another object\'s position: <b>object2.x</b>, <b>object2.y</b> (you can rename objects in the Objects tab)<br>• <b>random(10,90)</b>, <b>round(x)</b>, <b>abs(x)</b>, <b>min(a,b)</b>, <b>max(a,b)</b>, <b>sin(x)</b>, <b>cos(x)</b><br>• Built-in values: <b>score</b>, <b>life</b>, <b>time</b>, <b>tapX</b>, <b>tapY</b><br>• Put <b>{points}</b> in a text object to show its value in the game.<br>• "Send event" lets one rule trigger another rule.</div></details>';
-var HELP_TR='<details class="rule"><summary><b>💡 Sayı yerine hesap yazabilirsin</b></summary><div class="hint" style="opacity:.85;line-height:1.6">Sayı beklenen her kutuya hesap yazabilirsin:<br>• <b>puan*2</b>, <b>can+1</b>, <b>(a+b)/2</b> (toplama +, çıkarma -, çarpma *, bölme /)<br>• Başka nesnenin yeri: <b>nesne2.x</b>, <b>nesne2.y</b> (İsim sekmesinden adı değiştirebilirsin)<br>• <b>rastgele(10,90)</b>, <b>yuvarla(x)</b>, <b>mutlak(x)</b>, <b>min(a,b)</b>, <b>max(a,b)</b>, <b>sin(x)</b>, <b>cos(x)</b><br>• Hazır değerler: <b>skor</b>, <b>can</b>, <b>zaman</b>, <b>dokunX</b>, <b>dokunY</b><br>• Yazı nesnesine <b>{puan}</b> yazarsan oyunda değeri görünür.<br>• "Olay gönder" bir kuralın başka kuralı tetiklemesini sağlar.</div></details>';
+var HELP_EN='<details class="rule"><summary><b>💡 You can type a formula instead of a number</b></summary><div class="hint" style="opacity:.85;line-height:1.6">You can type a formula in any box that expects a number:<br>• <b>points*2</b>, <b>life+1</b>, <b>(a+b)/2</b><br>• Another object\'s values: <b>object2.x</b>, <b>.y</b>, <b>.vx</b>, <b>.vy</b>, <b>.s</b>, <b>.r</b> (rename objects in the Objects tab)<br>• Joystick: <b>joystick.jx</b>, <b>joystick.jy</b> (−1 to 1), <b>joystick.ja</b> (angle)<br>• <b>object.held</b> (1 while pressed), <b>object.ground</b> (1 when standing on a solid), <b>object.count</b> (how many exist, clones included)<br>• Logic: <b>a>5 and b<3</b>, <b>a>5 or b<3</b>, <b>not a</b><br>• <b>random(10,90)</b>, <b>randint(1,6)</b>, <b>round</b>, <b>abs</b>, <b>min</b>, <b>max</b>, <b>sin</b>, <b>cos</b>, <b>tan</b>, <b>pow(a,b)</b>, <b>clamp(v,a,b)</b>, <b>dist(x1,y1,x2,y2)</b>, <b>angle(x1,y1,x2,y2)</b><br>• Built-in values: <b>score</b>, <b>life</b>, <b>time</b>, <b>tapX</b>, <b>tapY</b>, <b>i</b> (loop counter)<br>• Put <b>{points}</b> in a text object to show its value in the game.<br>• Clone: hide the original ("Hidden at start"), then use "Clone" in a rule. Use the "When a clone is created" rule to set up each copy.<br>• "Send event" lets one rule trigger another rule.</div></details>';
+var HELP_TR='<details class="rule"><summary><b>💡 Sayı yerine hesap yazabilirsin</b></summary><div class="hint" style="opacity:.85;line-height:1.6">Sayı beklenen her kutuya hesap yazabilirsin:<br>• <b>puan*2</b>, <b>can+1</b>, <b>(a+b)/2</b><br>• Başka nesnenin değerleri: <b>nesne2.x</b>, <b>.y</b>, <b>.vx</b>, <b>.vy</b>, <b>.s</b>, <b>.r</b> (adı Nesneler sekmesinden değiştirebilirsin)<br>• Joystick: <b>joystick.jx</b>, <b>joystick.jy</b> (−1 ile 1 arası), <b>joystick.ja</b> (açı)<br>• <b>nesne.basili</b> (basılıyken 1), <b>nesne.zemin</b> (katı bir şeyin üstündeyse 1), <b>nesne.sayi</b> (kaç tane var, klonlar dahil)<br>• Mantık: <b>a>5 and b<3</b>, <b>a>5 or b<3</b>, <b>not a</b><br>• <b>rastgele(10,90)</b>, <b>rastgeleint(1,6)</b>, <b>yuvarla</b>, <b>mutlak</b>, <b>min</b>, <b>max</b>, <b>sin</b>, <b>cos</b>, <b>tan</b>, <b>us(a,b)</b>, <b>sinir(v,a,b)</b>, <b>mesafe(x1,y1,x2,y2)</b>, <b>aci(x1,y1,x2,y2)</b><br>• Hazır değerler: <b>skor</b>, <b>can</b>, <b>zaman</b>, <b>dokunX</b>, <b>dokunY</b>, <b>i</b> (döngü sayacı)<br>• Yazı nesnesine <b>{puan}</b> yazarsan oyunda değeri görünür.<br>• Klon: orijinali "Başta gizli" yap, sonra kuralda "Klonla"yı kullan. Her kopyayı ayarlamak için "Klon oluşunca" kuralını kullan.<br>• "Olay gönder" bir kuralın başka kuralı tetiklemesini sağlar.</div></details>';
 var HELP=window.GL=="en"?HELP_EN:HELP_TR;
 function varsH(){
 var h='<p class="hint">Değişken, oyunda sakladığın bir sayıdır (puan, hız, seviye…). Kurallarda adını yazarak kullanırsın.</p>';
@@ -255,14 +286,29 @@ function panel(){
 document.querySelectorAll(".tab").forEach(function(b){b.classList.toggle("on",b.dataset.tab==tab);});
 var h="";
 if(tab=="obj"){
+var wv=cur.world||{},ww=wv.w||100,wh=wv.h||100;
 h+=rw("İsim",'<input type="text" data-g="name" maxlength="30" value="'+esc(cur.name)+'">')+rw("Arka plan",'<input type="color" data-g="bg" value="'+cur.bg+'">');
+h+=rw("Dünya genişliği (%)",'<input type="number" data-g="ww" value="'+ww+'">')+rw("Dünya yüksekliği (%)",'<input type="number" data-g="wh" value="'+wh+'">');
+if(ww>100)h+=rw("Sahneyi kaydır →",'<input type="range" data-cam="x" min="0" max="'+(ww-100)+'" value="'+editCam.x+'">');
+if(wh>100)h+=rw("Sahneyi kaydır ↓",'<input type="range" data-cam="y" min="0" max="'+(wh-100)+'" value="'+editCam.y+'">');
 h+='<button class="btn big" data-draw="new">✏️ Yeni karakter çiz</button>';
 h+='<button class="btn big g" data-addtext="1">🔤 Yazı ekle</button>';
+h+='<button class="btn big g" data-addjoy="1">🕹️ Joystick ekle</button>';
+h+='<button class="btn big g" data-addbox="1">▬ Kutu / Platform ekle</button>';
 h+='<p class="hint">Hazır emoji (hızlı ekle):</p><div class="emo">'+EM.map(function(e){return '<button data-a="'+e+'">'+e+'</button>';}).join("")+'</div>';
 h+='<p class="hint">Sahnedeki nesneler (sahnede sürükleyerek de taşıyabilirsin):</p><div class="emo">'+cur.objects.map(function(o){return '<button class="'+(o.id==sel?"on":"")+'" data-s="'+o.id+'">'+(isSp(o)?'<img src="'+cur.sprites[o.sp]+'" style="width:30px;height:30px;display:block">':o.tx!=null?'<span data-nt style="font-size:16px;font-weight:800">'+esc(o.tx.slice(0,6))+'</span>':o.e)+'</button>';}).join("")+'</div>';
 var o=fo(sel);
 if(o){
-h+='<div class="rule">'+[["x","Sol-sağ (0-100)"],["y","Yukarı-aşağı (0-100)"],["s","Boyut"],["r","Dönüş (derece)"]].map(function(f){return rw(f[1],'<input type="number" data-f="'+f[0]+'" value="'+o[f[0]]+'">');}).join("")+rw("Sürüklensin",'<input type="checkbox" data-f="drag"'+(o.drag?" checked":"")+'>')+rw("Başta gizli",'<input type="checkbox" data-f="hide"'+(o.hide?" checked":"")+'>')+rw("İsim",'<input type="text" data-f="nm" maxlength="20" value="'+esc(o.nm||"")+'">')+rw("Yatay hız",'<input type="number" data-f="vx" value="'+(o.vx||0)+'">')+rw("Dikey hız",'<input type="number" data-f="vy" value="'+(o.vy||0)+'">')+rw("Yerçekimi",'<input type="number" data-f="g" value="'+(o.g||0)+'">')+rw("Kenara değince",sl(EDG,o.edge||"none",'data-f="edge"'));
+var chk=function(k,l){return rw(l,'<input type="checkbox" data-f="'+k+'"'+(o[k]?" checked":"")+'>');};
+var numf=function(k,l,d){return rw(l,'<input type="number" data-f="'+k+'" value="'+(o[k]==null?d:o[k])+'">');};
+h+='<div class="rule">'+numf("x","Sol-sağ (0-100)",0)+numf("y","Yukarı-aşağı (0-100)",0);
+if(o.k=="box")h+=numf("w","Genişlik",30)+numf("h","Yükseklik",6)+rw("Renk",'<input type="color" data-f="c" value="'+(o.c||"#8b5cf6")+'">')+rw("Şekil",sl(SHP,o.shape||"rect",'data-f="shape"'));
+else h+=numf("s","Boyut",20);
+if(o.k!="joy")h+=numf("r","Dönüş (derece)",0);
+h+=numf("op","Saydamlık (%)",100)+chk("drag","Sürüklensin")+chk("hide","Başta gizli")+chk("fixed","Ekrana sabit");
+if(o.k!="joy")h+=chk("solid","Katı (üstüne basılır)")+chk("body","Fizik gövdesi (katılara çarpar)");
+h+=chk("cam","Kamera bunu takip etsin")+rw("İsim",'<input type="text" data-f="nm" maxlength="20" value="'+esc(o.nm||"")+'">');
+if(o.k!="joy")h+=numf("vx","Yatay hız",0)+numf("vy","Dikey hız",0)+numf("g","Yerçekimi",0)+rw("Kenara değince",sl(EDG,o.edge||"none",'data-f="edge"'));
 if(o.tx!=null)h+=rw("Yazı",'<input type="text" data-f="tx" maxlength="40" value="'+esc(o.tx)+'">')+rw("Yazı rengi",'<input type="color" data-f="c" value="'+(o.c||"#ffffff")+'">');
 if(isSp(o))h+='<button class="btn g" data-draw="edit" style="margin-right:8px">✏️ Çizimi düzenle</button>';
 h+='<button class="btn g" data-del="1">Nesneyi sil</button></div>';
@@ -273,37 +319,53 @@ h+=HELP+cur.rules.map(ruleH).join("")+'<button class="btn" data-nr="1">+ Kural e
 $("panel").innerHTML=h;
 }
 document.querySelectorAll(".tab").forEach(function(b){b.onclick=function(){tab=b.dataset.tab;panel();};});
+function holderOf(x,r){var cs=x.cadd||x.cdel;return cs=="w"?r.when:cs=="c"?r.if:listAt(r,x.l||"")[+x.ai];}
+function setC(h,parts,val){if(parts[0]=="m"){var m=h.more[+parts[1]];if(m)m[parts[2]]=pv(parts[2],val);}else h[parts[0]]=pv(parts[0],val);}
 $("panel").onclick=function(e){
 var d=e.target.closest("button");if(!d)return;var x=d.dataset;
 if(x.draw){openSp(x.draw=="edit"&&fo(sel)?fo(sel).sp:null);return;}
 if(x.addtext){var o={id:cur.nid++,tx:window.t("Yazı"),c:"#ffffff",x:50,y:50,s:8,r:0,drag:false};cur.objects.push(o);sel=o.id;}
-else if(x.a){var o={id:cur.nid++,e:x.a,x:50,y:50,s:20,r:0,drag:false};cur.objects.push(o);sel=o.id;}
+else if(x.addjoy){var oj={id:cur.nid++,k:"joy",e:"🕹️",x:20,y:80,s:34,r:0,drag:false,fixed:true};oj.nm=uniq("joystick",cur.objects,"nm",null);cur.objects.push(oj);sel=oj.id;}
+else if(x.addbox){var ob2={id:cur.nid++,k:"box",e:"▬",x:50,y:80,s:20,w:40,h:5,c:"#8b5cf6",shape:"rect",solid:true,r:0,drag:false};ob2.nm=uniq("platform",cur.objects,"nm",null);cur.objects.push(ob2);sel=ob2.id;}
+else if(x.a){var o2={id:cur.nid++,e:x.a,x:50,y:50,s:20,r:0,drag:false};cur.objects.push(o2);sel=o2.id;}
 else if(x.s){sel=+x.s;}
 else if(x.del){cur.objects=cur.objects.filter(function(o){return o.id!=sel;});sel=cur.objects.length?cur.objects[0].id:null;}
 else if(x.nr){var f=cur.objects[0]?cur.objects[0].id:0;cur.rules.push({when:{t:"tap",o:f},if:{t:"none",op:">",n:0},do:[{t:"score",o:f,v:1,v2:0}]});}
 else if(x.dr){cur.rules.splice(+x.dr,1);}
-else if(x.na){var f2=cur.objects[0]?cur.objects[0].id:0;cur.rules[+x.na].do.push({t:"score",o:f2,v:1,v2:0});}
-else if(x.dar!=null){cur.rules[+x.dar].do.splice(+x.dai,1);}
+else if(x.na){var f2=cur.objects[0]?cur.objects[0].id:0;listAt(cur.rules[+x.na],x.nl||"").push({t:"score",o:f2,v:1,v2:0});}
+else if(x.dar!=null){listAt(cur.rules[+x.dar],x.dal||"").splice(+x.dai,1);}
+else if(x.cadd){var hc=holderOf(x,cur.rules[+x.r]);if(!Array.isArray(hc.more))hc.more=[];hc.more.push({j:"and",a:"",op:">",n:0});}
+else if(x.cdel){var hd=holderOf(x,cur.rules[+x.r]);if(hd&&hd.more)hd.more.splice(+x.ci,1);}
 else if(x.nv){cur.vars.push({n:uniq(window.t("degisken"),cur.vars,"n",null),v:0});}
 else if(x.dv!=null){cur.vars.splice(+x.dv,1);}
 else return;
 sv();stage();panel();
 };
+$("panel").oninput=function(e){
+var t=e.target,x=t.dataset;
+if(x.cam){editCam[x.cam]=+t.value||0;if(ctrl&&ctrl.setCam)ctrl.setCam(editCam.x,editCam.y);}
+};
 $("panel").onchange=function(e){
 var t=e.target,x=t.dataset,r,rp=false;
-if(x.f){var o=fo(sel);
+if(x.cam)return;
+if(x.f){var o=fo(sel);if(!o)return;
 if(t.type=="checkbox")o[x.f]=t.checked;
 else if(x.f=="tx")o.tx=t.value||window.t("Yazı");
-else if(x.f=="c"||x.f=="edge")o[x.f]=t.value;
+else if(x.f=="c"||x.f=="edge"||x.f=="shape")o[x.f]=t.value;
 else if(x.f=="nm"){o.nm=uniq(cleanName(t.value,window.t("nesne")+o.id),cur.objects,"nm",o);t.value=o.nm;rp=true;}
 else o[x.f]=+t.value||0;}
-else if(x.g){cur[x.g]=t.value;$("pn").textContent=cur.name;}
+else if(x.g){
+if(x.g=="ww"||x.g=="wh"){cur.world=cur.world||{w:100,h:100};var nv=Math.max(100,Math.min(1000,+t.value||100));cur.world[x.g=="ww"?"w":"h"]=nv;t.value=nv;editCam={x:0,y:0};rp=true;}
+else{cur[x.g]=t.value;$("pn").textContent=cur.name;}}
 else if(x.vi!=null){var v=cur.vars[+x.vi];if(x.vf=="n"){v.n=uniq(cleanName(t.value,window.t("degisken")),cur.vars,"n",v);t.value=v.n;}else v.v=+t.value||0;}
 else if(x.p){
 r=cur.rules[+x.r];
-if(x.ai!=null){var a=r.do[+x.ai];a[x.p]=pv(x.p,t.value);
-if(x.p=="t"){var D={beep:440,emit:0,bghue:180,setp:50,towards:1,vel:10,set:0,add:1};if(D[a.t]!=null)a.v=D[a.t];if(a.t=="emit")a.name=window.t("olay1");else if((a.t=="set"||a.t=="add")&&!a.name)a.name=cur.vars[0]?cur.vars[0].n:"";}}
-else{var k=x.p.split("."),g=k[0]=="w"?r.when:r.if;g[k[1]]=pv(k[1],t.value);}
+if(!r)return;
+if(x.ai!=null){var a=listAt(r,x.l||"")[+x.ai];if(!a)return;
+if(x.p.indexOf("m.")==0)setC(a,x.p.split("."),t.value);
+else{a[x.p]=pv(x.p,t.value);
+if(x.p=="t"){if(DEFV[a.t]!=null)a.v=DEFV[a.t];if(a.t=="clone")a.tg=0;if(a.t=="emit")a.name=window.t("olay1");else if((a.t=="set"||a.t=="add")&&!a.name)a.name=cur.vars[0]?cur.vars[0].n:"";fix(r);}}}
+else{var k=x.p.split("."),g=k[0]=="w"?r.when:r.if;setC(g,k.slice(1),t.value);if(x.p=="w.t"||x.p=="c.t")fix(r);}
 }else return;
 sv();stage();if(rp||(x.p&&/(^|\.)t$/.test(x.p)))panel();
 };

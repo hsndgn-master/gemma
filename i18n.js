@@ -53,6 +53,15 @@ var D={
 "Ad":"Name","Başlangıç":"Start value","+ Değişken ekle":"+ Add variable","Değişken, oyunda sakladığın bir sayıdır (puan, hız, seviye…). Kurallarda adını yazarak kullanırsın.":"A variable is a number you store in the game (points, speed, level…). Use it in rules by typing its name.","Önce \"Değişkenler\" sekmesinden değişken ekle":"First add a variable in the \"Variables\" tab","sayı veya hesap":"number or formula",
 "Bağlantı kurulamadı, sayfayı yenile.":"Could not connect, refresh the page.","Yayınlamak için önce giriş yapmalısın. Ana sayfadan giriş yap.":"You need to log in to publish. Log in from the home page.","Yayınlanıyor...":"Publishing...","Oturum bitti. Ana sayfadan tekrar giriş yap.":"Session expired. Log in again from the home page.","Yayınlanamadı.":"Could not publish.","Yayınlandı! 🎉":"Published! 🎉","Ana sayfaya dön":"Back to home","Önce bir şey çiz.":"Draw something first.",
 "☁ Kaydediliyor…":"☁ Saving…","Sadece bu cihazda":"Only on this device","☁ Kaydedildi":"☁ Saved","☁ Kaydedilemedi":"☁ Could not save","☁ Bağlantı yok":"☁ No connection",
+/* v6: motor güncellemesi */
+"Nesneye basılı tutulurken":"While an object is held down","Ekrana basılı tutulurken":"While the screen is held down","Nesne bırakılınca":"When an object is released","Ekran bırakılınca":"When the screen is released","Kaydırma yapılınca":"When the screen is swiped","Klon oluşunca":"When a clone is created",
+"Klonla (kopya oluştur)":"Clone (make a copy)","Sil (klon) / gizle":"Delete (clone) / hide","Eğer … ise":"If … then","Tekrarla (döngü)":"Repeat (loop)","Şart doğruyken tekrarla":"Repeat while condition is true","Bekle, sonra yap":"Wait, then do",
+"Yön":"Direction","Sola":"Left","Sağa":"Right","Yukarı":"Up","Aşağı":"Down",
+"Nerede doğsun":"Spawn at","— (kendi konumu)":"— (its own position)","Kaç kez":"How many times","Tekrarlanacak eylemler:":"Actions to repeat:","Doğruysa:":"If true:","Değilse:":"Otherwise:","Sonra yapılacaklar:":"Then do:","Bağlaç":"Join","ve":"and","veya":"or","+ Şart ekle (ve/veya)":"+ Add condition (and/or)","Şartı sil":"Delete condition",
+"Saydamlık (%)":"Opacity (%)","Genişlik":"Width","Yükseklik":"Height","Şekil":"Shape","Dikdörtgen":"Rectangle","Yuvarlak köşeli":"Rounded","Elips":"Ellipse",
+"Ekrana sabit":"Fixed to screen","Katı (üstüne basılır)":"Solid (can be stood on)","Fizik gövdesi (katılara çarpar)":"Physics body (collides with solids)","Kamera bunu takip etsin":"Camera follows this",
+"🕹️ Joystick ekle":"🕹️ Add joystick","▬ Kutu / Platform ekle":"▬ Add box / platform",
+"Dünya genişliği (%)":"World width (%)","Dünya yüksekliği (%)":"World height (%)","Sahneyi kaydır →":"Scroll stage →","Sahneyi kaydır ↓":"Scroll stage ↓",
 /* varsayılan adlar (kodda window.t ile kullanılır) */
 "nesne":"object","degisken":"variable","olay1":"event1"
 };
