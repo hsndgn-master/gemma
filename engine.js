@@ -24,7 +24,7 @@ var hudEl=document.createElement("div");
 hudEl.style.cssText="position:absolute;top:12px;left:0;right:0;text-align:center;font:800 34px -apple-system,sans-serif;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5);pointer-events:none;z-index:5";
 function hud(){hudEl.innerHTML=Math.round(vars.score*100)/100+(usesLife?'<div style="font-size:20px">❤️ '+Math.round(vars.life*100)/100+'</div>':"");}
 var wd=document.createElement("div");
-wd.style.cssText="position:absolute;left:0;top:0;width:"+(WW*100)+"%;height:"+(WH*100)+"%;will-change:transform";
+wd.style.cssText="position:absolute;left:0;top:0;width:"+WW+"%;height:"+WH+"%;will-change:transform";
 box.appendChild(wd);
 hud();if(!edit)box.appendChild(hudEl);
 function cl(v){return Math.max(0,Math.min(100,v));}
