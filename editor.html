@@ -67,6 +67,11 @@ button,select,input{font:inherit}
 .tb2{width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .tb2 svg{width:20px;height:20px}
 summary{cursor:pointer;font-size:15px}
+.seg{display:flex;gap:6px;margin-bottom:10px;background:var(--soft);border-radius:12px;padding:4px}
+.seg button{flex:1;background:none;border:0;color:var(--mut);border-radius:9px;padding:9px;font-weight:700}
+.seg button.on{background:var(--inv);color:var(--invfg)}
+.tab{font-size:14px;padding:10px 4px}
+select.addb{width:100%;background:var(--inv);color:var(--invfg);border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;margin-top:8px}
 .sub{margin:6px 0 4px 4px;border-left:3px solid var(--bd2);padding-left:8px}
 .mrow{background:var(--field);border-radius:10px;padding:6px 8px;margin:6px 0}
 .row input[type=range]{flex:1;min-width:0;padding:0;border:0;background:none}
@@ -79,7 +84,7 @@ body{transition:background-color .25s,color .25s}
 <div id="list"><div class="bar"><button class="btn g" id="home">←</button><b>Projelerim</b><button class="btn g tb2" data-theme-btn></button><button class="btn" id="new">+ Yeni proje</button></div><div class="in" id="pl"></div></div>
 <div id="ed"><div class="bar"><button class="btn g" id="back">←</button><b id="pn"></b><span id="cl" style="font-size:12px;opacity:.6;white-space:nowrap"></span><button class="btn g tb2" data-theme-btn></button><button class="btn g" id="mode"></button><button class="btn" id="pub">Yayınla</button></div>
 <div class="main"><div class="pv"><div id="stage"></div></div>
-<div class="side"><div class="tabs"><button class="tab" data-tab="obj">Nesneler</button><button class="tab" data-tab="rul">Kurallar</button><button class="tab" data-tab="var">Değişkenler</button></div><div id="panel"></div></div></div></div>
+<div class="side"><div class="seg" id="seg"><button data-adv="0">Temel</button><button data-adv="1">Gelişmiş</button></div><div class="tabs"><button class="tab" data-tab="obj">Nesneler</button><button class="tab" data-tab="beh">Davranışlar</button><button class="tab" data-tab="rul">Kurallar</button><button class="tab" data-tab="var">Değişkenler</button></div><div id="panel"></div></div></div></div>
 <div id="sp">
 <div class="bar"><button class="btn g" id="sp_x">İptal</button><b>Çizim</b><button class="btn" id="sp_ok">Kaydet</button></div>
 <div class="sbody">
@@ -102,7 +107,7 @@ body{transition:background-color .25s,color .25s}
 </div></div></div>
 <script src="/engine.js?v=6"></script>
 <script>
-var K="gemma_projects",P=[],cur=null,sel=null,mode="edit",tab="obj",ctrl=null,editCam={x:0,y:0};
+var K="gemma_projects",P=[],cur=null,sel=null,mode="edit",tab="obj",ctrl=null,editCam={x:0,y:0},adv=false;try{adv=localStorage.getItem("gemma_adv")=="1";}catch(e){}
 var EM=["😀","🐱","🐶","⭐","🍎","🚀","👾","💎","🎈","🌙","🔥","🦊","🪨","🏆","🎯","❤️"];
 var WH=[["start","Oyun başlayınca"],["tapany","Ekrana dokunulunca"],["tap","Nesneye dokunulunca"],["hold","Nesneye basılı tutulurken"],["holdany","Ekrana basılı tutulurken"],["up","Nesne bırakılınca"],["upany","Ekran bırakılınca"],["swipe","Kaydırma yapılınca"],["touch","Nesne başka nesneye değince"],["edge","Nesne kenara değince"],["oclone","Klon oluşunca"],["always","Sürekli (her an)"],["every","Her … saniyede"],["after","… saniye sonra (bir kez)"],["cond","Şart doğru olunca"],["event","Olay gelince"]];
 var CD=[["none","Her zaman"],["expr","Şart var"]];
@@ -143,7 +148,7 @@ if(x.o!=null)openP(+x.o);
 else if(x.d!=null){if(confirm("Bu proje silinsin mi?")){var did=P[+x.d].id;P.splice(+x.d,1);cur=null;sv();cloudDel(did);showList();}}
 };
 $("new").onclick=function(){
-P.unshift({id:Date.now().toString(36),name:window.t("Yeni proje"),bg:"#1e3a8a",nid:2,nsp:1,sprites:{},vars:[],objects:[{id:1,e:"⭐",x:50,y:50,s:20,r:0,drag:false}],rules:[{when:{t:"tap",o:1},if:{t:"none",op:">",n:0},do:[{t:"jump",o:1,v:1,v2:0}]}]});
+P.unshift({id:Date.now().toString(36),name:window.t("Yeni proje"),bg:"#1e3a8a",nid:2,nsp:1,sprites:{},vars:[],objects:[{id:1,e:"⭐",x:50,y:50,s:20,r:0,drag:false}],rules:[],beh:[{t:"tap",o:1,score:1,jump:true,kill:false}]});
 cur=P[0];sv();openP(0);
 };
 $("home").onclick=function(){location.href="/";};
@@ -184,7 +189,7 @@ $("pb").style.display="flex";
 $("mode").onclick=function(){mode=mode=="edit"?"play":"edit";if(mode=="play"&&document.activeElement)document.activeElement.blur();modeBtn();stage();};
 function modeBtn(){$("mode").textContent=mode=="edit"?"▶ Oyna":"✎ Düzenle";$("ed").classList.toggle("lock",mode=="play");}
 function openP(i){
-cur=P[i];cur.sprites=cur.sprites||{};cur.vars=cur.vars||[];cur.nsp=cur.nsp||1;
+cur=P[i];cur.beh=cur.beh||[];cur.sprites=cur.sprites||{};cur.vars=cur.vars||[];cur.nsp=cur.nsp||1;
 cur.rules.forEach(fix);
 sel=cur.objects.length?cur.objects[0].id:null;mode="edit";tab="obj";editCam={x:0,y:0};
 $("list").style.display="none";$("ed").style.display="flex";
@@ -282,13 +287,54 @@ var h='<p class="hint">Değişken, oyunda sakladığın bir sayıdır (puan, hı
 h+=cur.vars.map(function(v,i){var a='data-vi="'+i+'" data-vf=';return '<div class="rule">'+rw("Ad",'<input type="text" '+a+'"n" maxlength="20" value="'+esc(v.n)+'">')+rw("Başlangıç",'<input type="number" '+a+'"v" value="'+v.v+'">')+'<button class="btn g sm" data-dv="'+i+'">Sil</button></div>';}).join("");
 return h+'<button class="btn" data-nv="1">+ Değişken ekle</button>';
 }
+var BH={
+joy:{n:"🕹️ Joystick şunu kontrol etsin",f:[["o","obj","Kontrol edilen nesne"],["j","obj","Joystick"],["mode","sel","Hareket türü",[["free","Her yöne"],["side","Sadece sağ-sol (platform oyunu)"]]],["speed","num","Hız (1-10)"]],d:{mode:"free",speed:5}},
+shoot:{n:"🔫 Mermi fırlat",f:[["o","obj","Kim fırlatsın"],["b","obj","Mermi (oyunda görünmez, kopyası çıkar)"],["mode","sel","Ne zaman",[["auto","Kendiliğinden, sürekli"],["tap","Ekrana dokununca"],["btn","Bir nesneye dokununca"]]],["sec","num","Kaç saniyede bir",null,["mode","auto"]],["btn","obj","Hangi nesneye dokunulunca",null,["mode","btn"]],["dir","sel","Yön",[["up","Yukarı"],["down","Aşağı"],["left","Sola"],["right","Sağa"]]],["speed","num","Mermi hızı (1-10)"]],d:{mode:"auto",sec:0.5,dir:"up",speed:6}},
+spawn:{n:"☄️ Rastgele nesneler yağdır",f:[["b","obj","Hangi nesne (oyunda görünmez, kopyası çıkar)"],["sec","num","Kaç saniyede bir"],["from","sel","Nereden gelsin",[["top","Yukarıdan"],["bottom","Aşağıdan"],["left","Soldan"],["right","Sağdan"],["random","Rastgele yerde belirsin"]]],["speed","num","Hız (1-10)",null,["from","!random"]],["stay","num","Ekranda kalma süresi (sn)",null,["from","random"]],["lose","chk","Kaçırırsan can azalsın",null,["from","!random"]]],d:{sec:1,from:"top",speed:4,stay:3,lose:false}},
+hit:{n:"💥 Çarpışınca ne olsun",f:[["a","obj","Bu nesne"],["b","obj","Şuna değince"],["score","num","Skor değişimi (0 = yok)"],["life","num","Can değişimi (−1 = bir can gider)"],["killA","chk","İlk nesne yok olsun"],["killB","chk","İkinci nesne yok olsun"],["end","sel","Oyun",[["none","Devam etsin"],["win","Kazanılsın"],["lose","Kaybedilsin"]]]],d:{score:1,life:0,killA:false,killB:true,end:"none"}},
+tap:{n:"👆 Dokununca ne olsun",f:[["o","obj","Hangi nesneye"],["score","num","Skor değişimi (0 = yok)"],["jump","chk","Rastgele yere gitsin"],["kill","chk","Yok olsun"]],d:{score:1,jump:true,kill:false}},
+follow:{n:"🧲 Başka nesneyi takip etsin",f:[["o","obj","Takip eden"],["tg","obj","Takip edilen"],["speed","num","Hız (1-10)"]],d:{speed:3}},
+move:{n:"➡️ Kendiliğinden hareket etsin",f:[["o","obj","Hangi nesne"],["dir","sel","Yön",[["right","Sağa"],["left","Sola"],["up","Yukarı"],["down","Aşağı"],["diag","Çapraz"]]],["speed","num","Hız (1-10)"],["edge","sel","Kenara değince",[["bounce","Sek"],["wrap","Öbür taraftan çıksın"],["stop","Dur"]]]],d:{dir:"right",speed:4,edge:"bounce"}},
+gravity:{n:"🪂 Yerçekimi olsun",f:[["o","obj","Hangi nesne"],["strength","num","Güç (1-10)"]],d:{strength:5}},
+jump:{n:"🦘 Zıplasın",f:[["o","obj","Hangi nesne"],["mode","sel","Ne zaman",[["tap","Ekrana dokununca"],["btn","Bir nesneye dokununca"]]],["btn","obj","Hangi nesneye dokunulunca",null,["mode","btn"]],["strength","num","Zıplama gücü (1-10)"]],d:{mode:"tap",strength:7}},
+spin:{n:"🌀 Dönsün",f:[["o","obj","Hangi nesne"],["speed","num","Hız (eksi = ters yön)"]],d:{speed:5}},
+goal:{n:"🏁 Oyun bitiş şartı",f:[["kind","sel","Şart",[["score","Skor şu kadar olunca kazan"],["twin","Şu kadar saniye sonra kazan"],["tlose","Şu kadar saniye sonra kaybet"]]],["v","num","Sayı"]],d:{kind:"score",v:10}},
+cam:{n:"🎥 Kamera takip etsin (büyük harita)",f:[["o","obj","Hangi nesneyi takip etsin"],["mw","num","Harita genişliği (kaç ekran)"],["mh","num","Harita yüksekliği (kaç ekran)"]],d:{mw:3,mh:1}}
+};
+function defObj(k){
+var L=cur.objects,nz=L.filter(function(o){return o.k!="joy"&&o.k!="box";}),jy=L.filter(function(o){return o.k=="joy";})[0];
+var r=k=="j"?(jy||L[0]):(k=="b"||k=="tg"||k=="btn")?(nz[1]||nz[0]||L[0]):(nz[0]||L[0]);
+return r?r.id:0;}
+function showB(b,f){var c=f[4];if(!c)return true;var v=c[1];return v.charAt(0)=="!"?b[c[0]]!=v.slice(1):b[c[0]]==v;}
+function fixBeh(b){var S=BH[b.t];if(!S)return;S.f.forEach(function(f){var k=f[0];
+if(f[1]=="obj"){if(!fo(b[k]))b[k]=defObj(k);}
+else if(b[k]==null){b[k]=f[1]=="chk"?false:f[1]=="sel"?f[3][0][0]:0;}});}
+function hideTpl(b){if((b.t=="shoot"||b.t=="spawn")&&fo(b.b)&&b.b!=b.o)fo(b.b).hide=true;}
+function setMap(b){if(b.t=="cam")cur.world={w:Math.max(100,Math.min(1000,(+b.mw||1)*100)),h:Math.max(100,Math.min(1000,(+b.mh||1)*100))};}
+function behH(){
+var h="";
+if(!adv&&cur.rules.length)h+='<p class="hint">Bu projede gelişmiş kurallar var, çalışmaya devam ederler. Görmek ve düzenlemek için Gelişmiş moda geç.</p>';
+if(!cur.beh.length)h+='<p class="hint">Henüz davranış yok. Aşağıdan bir tane ekle.</p>';
+cur.beh.forEach(function(b,i){var S=BH[b.t];if(!S)return;fixBeh(b);
+h+='<div class="rule"><div class="rt">'+S.n+'</div>';
+S.f.forEach(function(f){if(!showB(b,f))return;var k=f[0],at='data-bi="'+i+'" data-bk="'+k+'" data-bt="'+f[1]+'"',c;
+if(f[1]=="obj")c=ob(b[k],at);
+else if(f[1]=="sel")c=sl(f[3],b[k],at);
+else if(f[1]=="chk")c='<input type="checkbox" '+at+(b[k]?" checked":"")+'>';
+else c='<input type="number" step="any" '+at+' value="'+b[k]+'">';
+h+=rw(f[2],c);});
+h+='<button class="btn g sm" data-bdel="'+i+'">Davranışı sil</button></div>';});
+h+='<select class="addb" data-badd="1"><option value="">+ Davranış ekle…</option>'+Object.keys(BH).map(function(k){return '<option value="'+k+'">'+BH[k].n+'</option>';}).join("")+'</select>';
+return h;}
 function panel(){
-document.querySelectorAll(".tab").forEach(function(b){b.classList.toggle("on",b.dataset.tab==tab);});
+if(!adv&&(tab=="rul"||tab=="var"))tab="obj";
+document.querySelectorAll(".tab").forEach(function(b){var tt=b.dataset.tab;b.style.display=(!adv&&(tt=="rul"||tt=="var"))?"none":"";b.classList.toggle("on",tt==tab);});
+document.querySelectorAll("#seg button").forEach(function(b){b.classList.toggle("on",(b.dataset.adv=="1")==adv);});
 var h="";
 if(tab=="obj"){
 var wv=cur.world||{},ww=wv.w||100,wh=wv.h||100;
 h+=rw("İsim",'<input type="text" data-g="name" maxlength="30" value="'+esc(cur.name)+'">')+rw("Arka plan",'<input type="color" data-g="bg" value="'+cur.bg+'">');
-h+=rw("Dünya genişliği (%)",'<input type="number" data-g="ww" value="'+ww+'">')+rw("Dünya yüksekliği (%)",'<input type="number" data-g="wh" value="'+wh+'">');
+if(adv)h+=rw("Dünya genişliği (%)",'<input type="number" data-g="ww" value="'+ww+'">')+rw("Dünya yüksekliği (%)",'<input type="number" data-g="wh" value="'+wh+'">');
 if(ww>100)h+=rw("Sahneyi kaydır →",'<input type="range" data-cam="x" min="0" max="'+(ww-100)+'" value="'+editCam.x+'">');
 if(wh>100)h+=rw("Sahneyi kaydır ↓",'<input type="range" data-cam="y" min="0" max="'+(wh-100)+'" value="'+editCam.y+'">');
 h+='<button class="btn big" data-draw="new">✏️ Yeni karakter çiz</button>';
@@ -304,20 +350,26 @@ var numf=function(k,l,d){return rw(l,'<input type="number" data-f="'+k+'" value=
 h+='<div class="rule">'+numf("x","Sol-sağ (0-100)",0)+numf("y","Yukarı-aşağı (0-100)",0);
 if(o.k=="box")h+=numf("w","Genişlik",30)+numf("h","Yükseklik",6)+rw("Renk",'<input type="color" data-f="c" value="'+(o.c||"#8b5cf6")+'">')+rw("Şekil",sl(SHP,o.shape||"rect",'data-f="shape"'));
 else h+=numf("s","Boyut",20);
-if(o.k!="joy")h+=numf("r","Dönüş (derece)",0);
-h+=numf("op","Saydamlık (%)",100)+chk("drag","Sürüklensin")+chk("hide","Başta gizli")+chk("fixed","Ekrana sabit");
-if(o.k!="joy")h+=chk("solid","Katı (üstüne basılır)")+chk("body","Fizik gövdesi (katılara çarpar)");
-h+=chk("cam","Kamera bunu takip etsin")+rw("İsim",'<input type="text" data-f="nm" maxlength="20" value="'+esc(o.nm||"")+'">');
-if(o.k!="joy")h+=numf("vx","Yatay hız",0)+numf("vy","Dikey hız",0)+numf("g","Yerçekimi",0)+rw("Kenara değince",sl(EDG,o.edge||"none",'data-f="edge"'));
+if(adv&&o.k!="joy")h+=numf("r","Dönüş (derece)",0);
+if(adv)h+=numf("op","Saydamlık (%)",100);
+h+=chk("drag","Sürüklensin")+chk("hide","Başta gizli");
+if(adv)h+=chk("fixed","Ekrana sabit");
+if(o.k!="joy")h+=chk("solid","Platform (üstüne basılır)");
+if(adv&&o.k!="joy")h+=chk("body","Fizik gövdesi (katılara çarpar)");
+if(adv)h+=chk("cam","Kamera bunu takip etsin");
+h+=rw("İsim",'<input type="text" data-f="nm" maxlength="20" value="'+esc(o.nm||"")+'">');
+if(adv&&o.k!="joy")h+=numf("vx","Yatay hız",0)+numf("vy","Dikey hız",0)+numf("g","Yerçekimi",0)+rw("Kenara değince",sl(EDG,o.edge||"none",'data-f="edge"'));
 if(o.tx!=null)h+=rw("Yazı",'<input type="text" data-f="tx" maxlength="40" value="'+esc(o.tx)+'">')+rw("Yazı rengi",'<input type="color" data-f="c" value="'+(o.c||"#ffffff")+'">');
 if(isSp(o))h+='<button class="btn g" data-draw="edit" style="margin-right:8px">✏️ Çizimi düzenle</button>';
 h+='<button class="btn g" data-del="1">Nesneyi sil</button></div>';
 }
+}else if(tab=="beh"){h+=behH();
 }else if(tab=="var"){h+=varsH();}else{
 h+=HELP+cur.rules.map(ruleH).join("")+'<button class="btn" data-nr="1">+ Kural ekle</button>';
 }
 $("panel").innerHTML=h;
 }
+$("seg").onclick=function(e){var b=e.target.closest("button");if(!b)return;adv=b.dataset.adv=="1";try{localStorage.setItem("gemma_adv",adv?"1":"0");}catch(x){}panel();};
 document.querySelectorAll(".tab").forEach(function(b){b.onclick=function(){tab=b.dataset.tab;panel();};});
 function holderOf(x,r){var cs=x.cadd||x.cdel;return cs=="w"?r.when:cs=="c"?r.if:listAt(r,x.l||"")[+x.ai];}
 function setC(h,parts,val){if(parts[0]=="m"){var m=h.more[+parts[1]];if(m)m[parts[2]]=pv(parts[2],val);}else h[parts[0]]=pv(parts[0],val);}
@@ -336,6 +388,7 @@ else if(x.na){var f2=cur.objects[0]?cur.objects[0].id:0;listAt(cur.rules[+x.na],
 else if(x.dar!=null){listAt(cur.rules[+x.dar],x.dal||"").splice(+x.dai,1);}
 else if(x.cadd){var hc=holderOf(x,cur.rules[+x.r]);if(!Array.isArray(hc.more))hc.more=[];hc.more.push({j:"and",a:"",op:">",n:0});}
 else if(x.cdel){var hd=holderOf(x,cur.rules[+x.r]);if(hd&&hd.more)hd.more.splice(+x.ci,1);}
+else if(x.bdel!=null){cur.beh.splice(+x.bdel,1);}
 else if(x.nv){cur.vars.push({n:uniq(window.t("degisken"),cur.vars,"n",null),v:0});}
 else if(x.dv!=null){cur.vars.splice(+x.dv,1);}
 else return;
@@ -348,6 +401,10 @@ if(x.cam){editCam[x.cam]=+t.value||0;if(ctrl&&ctrl.setCam)ctrl.setCam(editCam.x,
 $("panel").onchange=function(e){
 var t=e.target,x=t.dataset,r,rp=false;
 if(x.cam)return;
+if(x.badd!=null){if(!t.value)return;var bt=BH[t.value],nb={t:t.value};Object.keys(bt.d).forEach(function(k){nb[k]=bt.d[k];});fixBeh(nb);hideTpl(nb);setMap(nb);cur.beh.push(nb);sv();stage();panel();return;}
+if(x.bi!=null){var bb=cur.beh[+x.bi];if(!bb)return;var bk=x.bk;
+if(x.bt=="chk")bb[bk]=t.checked;else if(x.bt=="num")bb[bk]=+t.value||0;else if(x.bt=="obj")bb[bk]=+t.value;else bb[bk]=t.value;
+hideTpl(bb);setMap(bb);sv();stage();panel();return;}
 if(x.f){var o=fo(sel);if(!o)return;
 if(t.type=="checkbox")o[x.f]=t.checked;
 else if(x.f=="tx")o.tx=t.value||window.t("Yazı");
