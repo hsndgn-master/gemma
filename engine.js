@@ -9,6 +9,7 @@ if(edit&&cb.cam){cam.x=+cb.cam.x||0;cam.y=+cb.cam.y||0;}
 vars.score=0;vars.life=3;(p.vars||[]).forEach(function(v){if(v&&v.n)vars[v.n]=+v.v||0;});
 var st=rules.map(function(){return {};});
 var TR=edit?"none":"left .06s linear,top .06s linear,transform .1s,font-size .1s,width .1s,height .1s";
+var FF={sans:"-apple-system,sans-serif",serif:"Georgia,'Times New Roman',serif",mono:"'Courier New',Menlo,monospace",impact:"Impact,'Arial Black',sans-serif",comic:"'Comic Sans MS','Chalkboard SE',cursive",round:"'Trebuchet MS','Avenir Next',sans-serif"};
 var usesLife=/\blife\b|\bcan\b/.test(JSON.stringify(rules));
 function onMv(e){var q=ptr[e.pointerId];if(!q)return;
 if(q.obj&&q.obj.k=="joy"&&q.obj._pid==e.pointerId)joy(q.obj,e);else setLast(e);}
@@ -251,6 +252,7 @@ else if(k=="w"||k=="h")o[k]=Math.max(1,Math.min(400,v));}
 else if(t=="goobj"){if(tg){var q=wpos(tg);o.x=clx(o,o.fixed?q.x-cam.x:q.x);o.y=cly(o,o.fixed?q.y-cam.y:q.y);}}
 else if(t=="towards"){if(tg){var po=wpos(o),q2=wpos(tg),dx=(q2.x-po.x)/100*W,dy=(q2.y-po.y)/100*H,dd=Math.sqrt(dx*dx+dy*dy);if(dd>0){var sp=Math.min(dd,Math.abs(v)/100*W);o.x=clx(o,o.x+dx/dd*sp/W*100);o.y=cly(o,o.y+dy/dd*sp/H*100);}}}
 else if(t=="vel"){o.vx=v;o.vy=v2;}
+else if(t=="settext"){if(o.tx!=null){o.tx=String(a.s==null?"":a.s).slice(0,80);var dd=els[o.id];if(dd){dd._t=undefined;dd.textContent=txt(o.tx);}}}
 put(o);}
 function act(a){var t=a.t;
 if(t=="score"){vars.score+=ev(a.v);hud();}
@@ -319,7 +321,7 @@ kn.style.cssText="position:absolute;left:50%;top:50%;border-radius:50%;backgroun
 d.appendChild(kn);o._kn=kn;o.jx=o.jx||0;o.jy=o.jy||0;o.ja=o.ja||0;}
 else if(o.k=="box"){d.style.background=o.c||"#8b5cf6";d.style.borderRadius=o.shape=="ellipse"?"50%":o.shape=="round"?"22%":"0";}
 else if(isSp(o)){d.style.backgroundImage="url("+spr[o.sp]+")";d.style.backgroundSize="contain";d.style.backgroundRepeat="no-repeat";d.style.backgroundPosition="center";}
-else if(o.tx!=null){d.textContent=edit?o.tx:txt(o.tx);d.style.color=o.c||"#ffffff";d.style.whiteSpace="nowrap";d.style.fontWeight="800";d.style.fontFamily="-apple-system,sans-serif";d.style.textShadow="0 2px 6px rgba(0,0,0,.5)";}
+else if(o.tx!=null){d.textContent=edit?o.tx:txt(o.tx);d.style.color=o.c||"#ffffff";d.style.whiteSpace="nowrap";d.style.fontWeight="800";d.style.fontFamily=FF[o.ff]||FF.sans;d.style.textShadow="0 2px 6px rgba(0,0,0,.5)";}
 else d.textContent=o.e||"⭐";
 els[o.id]=d;d._o=o;put(o);(o.fixed?box:wd).appendChild(d);void d.offsetWidth;d.style.transition=TR;
 d.onpointerdown=function(ev){
