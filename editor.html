@@ -82,7 +82,7 @@ body{transition:background-color .25s,color .25s}
 <script src="/theme.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
 <div id="list"><div class="bar"><button class="btn g" id="home">←</button><b>Projelerim</b><button class="btn g tb2" data-theme-btn></button><button class="btn" id="new">+ Yeni proje</button></div><div class="in" id="pl"></div></div>
-<div id="ed"><div class="bar"><button class="btn g" id="back">←</button><b id="pn"></b><span id="cl" style="font-size:12px;opacity:.6;white-space:nowrap"></span><button class="btn g tb2" data-theme-btn></button><button class="btn g" id="mode"></button><button class="btn" id="pub">Yayınla</button></div>
+<div id="ed"><div class="bar"><button class="btn g" id="back">←</button><b id="pn"></b><span id="cl" style="font-size:12px;opacity:.6;white-space:nowrap"></span><button class="btn g tb2" data-theme-btn></button><button class="btn g" id="mode"></button><button class="btn" id="pub">Paylaş</button></div>
 <div class="main"><div class="pv"><div id="stage"></div></div>
 <div class="side"><div class="seg" id="seg"><button data-adv="0">Temel</button><button data-adv="1">Gelişmiş</button></div><div class="tabs"><button class="tab" data-tab="obj">Nesneler</button><button class="tab" data-tab="beh">Davranışlar</button><button class="tab" data-tab="rul">Kurallar</button><button class="tab" data-tab="var">Değişkenler</button></div><div id="panel"></div></div></div></div>
 <div id="sp">
@@ -97,12 +97,12 @@ body{transition:background-color .25s,color .25s}
 <div class="tb"><button id="sp_u">↶ Geri al</button><button id="sp_c">Temizle</button></div>
 </div></div></div>
 <div id="pb">
-<div class="bar"><button class="btn g" id="pb_x">İptal</button><b>Oyunu yayınla</b></div>
+<div class="bar"><button class="btn g" id="pb_x">İptal</button><b>Oyunu paylaş</b></div>
 <div class="pbody"><div>
 <div class="pf"><label>Başlık</label><input id="pb_t" maxlength="40" placeholder="Oyunun adı"><div class="pc" id="pb_tc">0/40</div></div>
 <div class="pf"><label>Açıklama</label><textarea id="pb_d" maxlength="120" placeholder="Oyun hakkında kısa bir cümle"></textarea><div class="pc" id="pb_dc">0/120</div></div>
 <div class="pf"><label>Hashtag'ler (en fazla 5)</label><input id="pb_g" maxlength="80" placeholder="refleks kolay uzay" autocapitalize="none" autocorrect="off"><div class="ptp" id="pb_gp"></div></div>
-<button class="btn big" id="pb_go">Yayınla</button>
+<button class="btn big" id="pb_go">Paylaş</button>
 <div class="amsg" id="pb_m"></div>
 </div></div></div>
 <script src="/engine.js?v=6"></script>
@@ -148,8 +148,9 @@ var x=e.target.dataset;
 if(x.o!=null)openP(+x.o);
 else if(x.d!=null){if(confirm("Bu proje silinsin mi?")){var did=P[+x.d].id;P.splice(+x.d,1);cur=null;sv();cloudDel(did);showList();}}
 };
-$("new").onclick=function(){
-P.unshift({id:Date.now().toString(36),name:window.t("Yeni proje"),bg:"#1e3a8a",nid:2,nsp:1,sprites:{},vars:[],objects:[{id:1,e:"⭐",x:50,y:50,s:20,r:0,drag:false}],rules:[],beh:[{t:"tap",o:1,score:1,jump:true,kill:false}]});
+$("new").onclick=async function(){
+var gs=await sess();
+P.unshift({guest:!gs,id:Date.now().toString(36),name:window.t("Yeni proje"),bg:"#1e3a8a",nid:2,nsp:1,sprites:{},vars:[],objects:[{id:1,e:"⭐",x:50,y:50,s:20,r:0,drag:false}],rules:[],beh:[{t:"tap",o:1,score:1,jump:true,kill:false}]});
 cur=P[0];sv();openP(0);
 };
 $("home").onclick=function(){location.href="/";};
@@ -166,25 +167,27 @@ async function doPub(){
 var btn=$("pb_go"),m=$("pb_m");m.className="amsg";m.textContent="";
 var t=$("pb_t").value.trim();
 if(!t){m.textContent="Oyuna bir başlık yaz.";return;}
-btn.disabled=true;m.textContent="Yayınlanıyor...";
+btn.disabled=true;m.textContent="Paylaşılıyor...";
 try{
 var s=(await getSb().auth.getSession()).data.session;
 if(!s){m.textContent="Oturum bitti. Ana sayfadan tekrar giriş yap.";btn.disabled=false;return;}
 var r=await fetch(API+"/publish",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({project:cur,title:t,descr:$("pb_d").value.trim(),tags:$("pb_g").value })});
 var j={};try{j=await r.json();}catch(x){}
-if(!r.ok){m.textContent=j.error||"Yayınlanamadı.";btn.disabled=false;return;}
-m.className="amsg ok";m.textContent="Yayınlandı! 🎉";
+if(!r.ok){m.textContent=j.error||"Paylaşılamadı.";btn.disabled=false;return;}
+m.className="amsg ok";m.textContent="Paylaşıldı! 🎉";
 btn.textContent="Ana sayfaya dön";btn.disabled=false;btn.onclick=function(){location.href="/";};
 }catch(e){m.textContent="Bağlantı hatası: "+(e&&e.message?e.message:e);btn.disabled=false;}
 }
 $("pub").onclick=async function(){
 if(!window.supabase){alert("Bağlantı kurulamadı, sayfayı yenile.");return;}
 var s=(await getSb().auth.getSession()).data.session;
-if(!s){alert("Yayınlamak için önce giriş yapmalısın. Ana sayfadan giriş yap.");return;}
+if(!s){
+try{localStorage.setItem(K,JSON.stringify(P));localStorage.setItem("gemma_pending",cur.id);}catch(x){alert("Kayıt için yer kalmadı. Bazı projeleri silmen gerekebilir.");return;}
+location.href="/?login=share";return;}
 $("pb_t").value=cur.name;$("pb_d").value="";$("pb_g").value="";$("pb_gp").textContent="";
 pbCount("pb_t","pb_tc",40);pbCount("pb_d","pb_dc",120);
 $("pb_m").className="amsg";$("pb_m").textContent="";
-var b=$("pb_go");b.disabled=false;b.textContent="Yayınla";b.onclick=doPub;
+var b=$("pb_go");b.disabled=false;b.textContent="Paylaş";b.onclick=doPub;
 $("pb").style.display="flex";
 };
 $("mode").onclick=function(){mode=mode=="edit"?"play":"edit";if(mode=="play"&&document.activeElement)document.activeElement.blur();modeBtn();stage();};
@@ -466,7 +469,8 @@ try{
 var s=await sess();if(!s)return;
 var uid=s.user.id,ow=null;
 try{ow=localStorage.getItem(OWN_K);}catch(e){}
-if(ow&&ow!=uid){P=[];setDel([]);lsSave();}
+if(ow&&ow!=uid){P=P.filter(function(p){return p.guest;});setDel([]);lsSave();}
+P.forEach(function(p){if(p.guest){delete p.guest;p.ut=Date.now();}});lsSave();
 try{localStorage.setItem(OWN_K,uid);}catch(e){}
 var H={Authorization:"Bearer "+s.access_token};
 var dl=getDel(),left=[];
@@ -573,7 +577,18 @@ else{var sid="s"+cur.nsp++;cur.sprites[sid]=url;var o={id:cur.nid++,sp:sid,e:"�
 $("sp").style.display="none";
 sv();stage();panel();
 };
+async function shareResume(){
+var m=location.search.match(/[?&]share=([A-Za-z0-9_-]+)/);if(!m)return;
+var t0=Date.now();while(syncing&&Date.now()-t0<8000)await new Promise(function(r){setTimeout(r,100);});
+var s=await sess();if(!s)return;
+var i=-1;for(var k=0;k<P.length;k++)if(P[k].id==m[1]){i=k;break;}
+try{localStorage.removeItem("gemma_pending");}catch(x){}
+try{history.replaceState(null,"","/editor.html");}catch(x){}
+if(i<0)return;
+openP(i);$("pub").onclick();
+}
 showList();
 syncDrafts();
+shareResume();
 document.addEventListener("visibilitychange",function(){if(document.hidden)flushAll();});
 </script></body></html>

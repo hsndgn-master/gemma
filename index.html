@@ -150,6 +150,7 @@ body.side #logo .lg,body.onpanel #logo .lg{filter:none}
 :root[data-theme="light"] body.side #logo .lg-l,:root[data-theme="light"] body.onpanel #logo .lg-l{display:block}
 :root[data-theme="light"] body.side #logo:has(.lg-l) .lg-d,:root[data-theme="light"] body.onpanel #logo:has(.lg-l) .lg-d{display:none}
 /* ---- Yasal: onay kutusu ve linkler ---- */
+.snote{font-size:17px;font-weight:700;color:var(--accent);max-width:340px;text-align:center}
 .tos{display:flex;align-items:flex-start;gap:10px;width:100%;max-width:340px;text-align:left;font-size:14px;line-height:1.45;cursor:pointer}
 .panel .tos input{width:22px;height:22px;max-width:none;padding:0;margin:1px 0 0;border-radius:6px;flex-shrink:0;accent-color:var(--accent)}
 .tos a{color:var(--accent)}
@@ -489,11 +490,11 @@ g.project=p;
 if(frame.isConnected&&frame.parentNode._on)frame.srcdoc=engineDoc(p);
 }).catch(function(){});
 }
-function goCreate(){if(!me){openProfile("sen");return;}location.href="/editor.html";}
+function goCreate(){location.href="/editor.html";}
 function addPromo(g){
 var card=document.createElement("div");
 card.className="card promo";
-card.innerHTML='<i style="left:12%;top:16%;animation-delay:0s">🎮</i><i style="right:12%;top:24%;animation-delay:.7s">⭐</i><i style="left:16%;bottom:22%;animation-delay:1.3s">🚀</i><i style="right:14%;bottom:30%;animation-delay:.4s">👾</i><h2>Haydi sen de oluştur!</h2><p>Kendi oyununu yap, yayınla, herkes oynasın.</p><button class="pbtn">Oluşturmaya başla!</button>'+(g.end?'<div class="phint">Başa dönmek için tekrar aşağı kaydır</div>':"");
+card.innerHTML='<i style="left:12%;top:16%;animation-delay:0s">🎮</i><i style="right:12%;top:24%;animation-delay:.7s">⭐</i><i style="left:16%;bottom:22%;animation-delay:1.3s">🚀</i><i style="right:14%;bottom:30%;animation-delay:.4s">👾</i><h2>Haydi sen de oluştur!</h2><p>Kendi oyununu yap, paylaş, herkes oynasın.</p><button class="pbtn">Oluşturmaya başla!</button>'+(g.end?'<div class="phint">Başa dönmek için tekrar aşağı kaydır</div>':"");
 feed.appendChild(card);
 card.querySelector(".pbtn").onclick=goCreate;
 var obs=new IntersectionObserver(function(list){list.forEach(function(e){if(e.isIntersecting)renderMeta(g);});},{root:feed,threshold:0.6});
@@ -589,6 +590,8 @@ setNav(v);
 }
 
 var authMode="giris";
+var shareFlow=/[?&]login=share(&|$)/.test(location.search);
+function afterAuth(){if(!shareFlow||!me)return false;var id=null;try{id=localStorage.getItem("gemma_pending");}catch(e){}if(!id||!/^[A-Za-z0-9_-]+$/.test(id))return false;location.href="/editor.html?share="+encodeURIComponent(id);return true;}
 var su={step:1,name:"",bio:"",mail:"",pass:"",tos:false};
 var PERSON_SVG='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.2"/><path d="M4 20.5c0-4.1 3.6-6.5 8-6.5s8 2.4 8 6.5z"/></svg>';
 function THB(){return '<button class="tbtn" data-theme-btn>'+GemmaTheme.icon()+'</button>';}
@@ -602,7 +605,7 @@ window.addEventListener("gemma-theme",markTheme);
 
 function renderAuth(){
 if(authMode=="kayit"){renderSignup();return;}
-profile.innerHTML=THB()+'<div class="pname">Giriş yap</div>'+
+profile.innerHTML=THB()+(shareFlow?'<div class="snote">'+L("Paylaşmak için hesabınıza girin","Log in to share")+'</div>':'')+'<div class="pname">Giriş yap</div>'+
 '<div class="pstat">Beğenmek, takip etmek ve oyun paylaşmak için</div>'+
 '<input id="a_mail" type="email" placeholder="E-posta" autocapitalize="none" autocorrect="off">'+
 '<input id="a_pass" type="password" placeholder="Şifre (en az 6 karakter)">'+
@@ -624,6 +627,7 @@ var r2=await sb.auth.signInWithPassword({email:mail,password:pass});
 if(r2.error){msg.textContent=trErr(r2.error.message);btn.disabled=false;return;}
 await loadUser();
 await loadSocial();
+if(afterAuth())return;
 openProfile("sen");
 }catch(e){
 msg.textContent="Bağlantı hatası, tekrar dene.";
@@ -710,6 +714,7 @@ try{var br=await sb.from("profiles").update({bio:su.bio}).eq("id",me.id).select(
 }
 su={step:1,name:"",bio:"",mail:"",pass:"",tos:false};
 await loadSocial();
+if(afterAuth())return;
 openProfile("sen");
 }catch(e){
 msg.textContent="Bağlantı hatası, tekrar dene.";
@@ -791,8 +796,7 @@ b.onclick=function(){
 var v=b.dataset.view;
 if(v=="profile"){openProfile("sen");}
 else if(v=="create"){
-if(!me){openProfile("sen");return;}
-showView("create");
+location.href="/editor.html";
 }
 else if(v=="admin"){if(!me||!me.role)return;showView("admin");loadAdmin();}
 else if(v=="reported"){if(!me||!me.role)return;showView("reported");loadReported();}
@@ -982,9 +986,9 @@ refreshFollow();
 try{await loadUser();}catch(e){}
 try{await loadGames();}catch(e){}
 try{await loadSocial();}catch(e){}
+if(shareFlow){if(me){afterAuth();}else{authMode="giris";renderAuth();showView("profile");}}
 })();
 document.querySelector("#nav .plus").onclick=function(){
-if(!me){openProfile("sen");return;}
 location.href="/editor.html";
 };
 </script>
